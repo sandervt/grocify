@@ -68,39 +68,50 @@
     .meal-row button:hover { background: var(--primary-hover); }
     .meal-row button.active { background: var(--accent); }
 
-    /* Weekly category pills (gray, not purple) */
-    #weeklyGroups {
+    /* Accordion container */
+    .weekly-accordion {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
+      flex-direction: column;
+      gap: 12px;
     }
-    #weeklyGroups button {
-      background: #e2e8f0;
-      color: var(--text);
+    /* Each group card */
+    .weekly-group {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    /* Header bar */
+    .weekly-group__header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #eef2ff; /* subtle indigo */
       border: none;
-      border-radius: 999px;
-      padding: 6px 14px;
       cursor: pointer;
-      font-size: 0.85rem;
-      transition: background 0.2s;
-    }
-    #weeklyGroups button:hover { background: #cbd5e1; }
-    /* Bold only when open or has active items inside */
-    #weeklyGroups button.active {
-      background: #e2e8f0;
-      color: var(--text);
+      font-size: 0.95rem;
       font-weight: 600;
+      color: #0f172a;
     }
-
-    /* Individual weekly items (sub-pills) */
-    #expandedWeeklies .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
+    .weekly-group__header.active { background: #eaefff; }
+    .weekly-group__title { display: flex; align-items: center; gap: 8px; }
+    .weekly-group__chev { font-weight: 700; width: 1.1em; text-align: center; }
+    .weekly-group__badge {
+      background: #e2e8f0;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      color: #0f172a;
     }
-    #expandedWeeklies .pill-row button {
+    /* Content area with item pills */
+    .weekly-group__content { display: none; padding: 12px; background: #ffffff; }
+    .weekly-group.open .weekly-group__content {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .weekly-group__content button {
       background: #e2e8f0;
       color: var(--text);
       border: none;
@@ -110,8 +121,8 @@
       font-size: 0.85rem;
       transition: background 0.2s;
     }
-    #expandedWeeklies .pill-row button:hover { background: #cbd5e1; }
-    #expandedWeeklies .pill-row button.active { background: var(--accent); color: white; }
+    .weekly-group__content button:hover { background: #cbd5e1; }
+    .weekly-group__content button.active { background: var(--accent); color: white; }
 
     .counter {
       font-weight: 500;
@@ -182,8 +193,7 @@
     <div class="meal-row" id="mealRow"></div>
 
     <h2 class="section-label">📦 Weekboodschappen</h2>
-    <div id="weeklyGroups"></div>
-    <div id="expandedWeeklies"></div>
+    <div id="weeklyAccordion" class="weekly-accordion"></div>
 
     <div class="counter" id="mealCounter">Je hebt maaltijden geselecteerd voor 0 dagen</div>
     <ul class="shopping-list" id="shoppingList"></ul>
@@ -243,7 +253,7 @@ const mealData = {
   ]
 };
 
-/* ---------- Weeklies (groups) ---------- */
+/* ---------- Weeklies (accordion groups) ---------- */
 const weeklyGroupsData = {
   "Ontbijt & Lunch": [
     "Brood","Pindakaas","Hagelslag","Sojayoghurt",
@@ -304,7 +314,7 @@ const itemToSection = {
   /* Diepvries */
   "Spinazie fijn diepvries": "Diepvries",
 
-  /* Toiletartikelen (own section at the very end) */
+  /* Toiletartikelen */
   "Toiletpapier": "Toiletartikelen","Zeep": "Toiletartikelen","Wasmiddel": "Toiletartikelen",
   "Shampoo": "Toiletartikelen","Tandpasta": "Toiletartikelen","Afwasmiddel": "Toiletartikelen","Keukenpapier": "Toiletartikelen"
 };
@@ -313,7 +323,7 @@ const itemToSection = {
 let activeMeals = new Set();
 let activeItems = {};
 
-/* ---------- UI builders ---------- */
+/* ---------- Meals UI ---------- */
 function renderMeals() {
   const mealRow = document.getElementById("mealRow");
   mealRow.innerHTML = "";
@@ -324,35 +334,6 @@ function renderMeals() {
     mealRow.appendChild(btn);
   }
 }
-
-function renderWeeklies() {
-  const row = document.getElementById("weeklyGroups");
-  row.innerHTML = "";
-  document.getElementById("expandedWeeklies").innerHTML = "";
-
-  const groupNames = Object.keys(weeklyGroupsData);
-  groupNames.forEach(group => {
-    const btn = document.createElement("button");
-    btn.textContent = "► " + group;
-    btn.dataset.group = group;
-    btn.onclick = () => toggleWeeklyGroup(group, btn);
-    row.appendChild(btn);
-
-    const container = document.createElement("div");
-    container.id = "group-" + group;
-    container.style.display = "none";
-    container.className = "pill-row";
-    weeklyGroupsData[group].forEach(item => {
-      const ibtn = document.createElement("button");
-      ibtn.textContent = item;
-      ibtn.onclick = () => toggleItem(item, ibtn, group);
-      container.appendChild(ibtn);
-    });
-    document.getElementById("expandedWeeklies").appendChild(container);
-  });
-}
-
-/* ---------- Interactions ---------- */
 function toggleMeal(meal, btn) {
   if (activeMeals.has(meal)) {
     activeMeals.delete(meal);
@@ -367,27 +348,100 @@ function toggleMeal(meal, btn) {
   renderList();
 }
 
-function toggleItem(item, btn, group) {
-  if (btn.classList.contains("active")) {
-    btn.classList.remove("active");
-    removeItem(item);
-  } else {
-    btn.classList.add("active");
-    addItem(item, group);
-  }
-  updateGroupActiveState(group);
-  renderList();
+/* ---------- Weeklies Accordion UI ---------- */
+function renderWeeklies() {
+  const container = document.getElementById("weeklyAccordion");
+  container.innerHTML = "";
+
+  Object.keys(weeklyGroupsData).forEach(group => {
+    // Card
+    const card = document.createElement("div");
+    card.className = "weekly-group";
+    card.dataset.group = group;
+
+    // Header
+    const header = document.createElement("button");
+    header.className = "weekly-group__header";
+    header.onclick = () => toggleWeeklyGroupAccordion(group);
+
+    const titleWrap = document.createElement("span");
+    titleWrap.className = "weekly-group__title";
+
+    const chev = document.createElement("span");
+    chev.className = "weekly-group__chev";
+    chev.textContent = "►";
+
+    const title = document.createElement("span");
+    title.textContent = group;
+
+    titleWrap.append(chev, title);
+
+    const badge = document.createElement("span");
+    badge.className = "weekly-group__badge";
+    badge.textContent = "0 geselecteerd";
+
+    header.append(titleWrap, badge);
+
+    // Content
+    const content = document.createElement("div");
+    content.className = "weekly-group__content";
+    content.id = `group-${group}`;
+
+    weeklyGroupsData[group].forEach(item => {
+      const b = document.createElement("button");
+      b.textContent = item;
+      b.onclick = () => {
+        b.classList.toggle("active");
+        if (b.classList.contains("active")) addItem(item, group);
+        else removeItem(item);
+        updateWeeklyBadge(group);
+        renderList();
+      };
+      content.appendChild(b);
+    });
+
+    card.append(header, content);
+    container.appendChild(card);
+
+    // Init badge
+    updateWeeklyBadge(group);
+  });
 }
 
-function toggleWeeklyGroup(groupName, groupBtn) {
-  const container = document.getElementById(`group-${groupName}`);
-  const willShow = container.style.display === "none";
-  container.style.display = willShow ? "flex" : "none";
-  groupBtn.textContent = (willShow ? "▼ " : "► ") + groupName;
-  updateGroupActiveState(groupName);
+function toggleWeeklyGroupAccordion(groupName) {
+  const container = document.getElementById("weeklyAccordion");
+  const cards = container.querySelectorAll(".weekly-group");
+
+  cards.forEach(card => {
+    const header = card.querySelector(".weekly-group__header");
+    const chev = card.querySelector(".weekly-group__chev");
+    const isTarget = card.dataset.group === groupName;
+
+    if (isTarget) {
+      const willOpen = !card.classList.contains("open");
+      card.classList.toggle("open", willOpen);
+      chev.textContent = willOpen ? "▼" : "►";
+      header.classList.toggle("active", willOpen);
+      if (willOpen) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      card.classList.remove("open");
+      header.classList.remove("active");
+      const otherChev = card.querySelector(".weekly-group__chev");
+      if (otherChev) otherChev.textContent = "►";
+    }
+  });
 }
 
-/* ---------- Items data ops ---------- */
+function updateWeeklyBadge(groupName) {
+  const card = document.querySelector(`.weekly-group[data-group="${CSS.escape(groupName)}"]`);
+  if (!card) return;
+  const content = card.querySelector(".weekly-group__content");
+  const badge = card.querySelector(".weekly-group__badge");
+  const count = content.querySelectorAll("button.active").length;
+  badge.textContent = count === 1 ? "1 geselecteerd" : `${count} geselecteerd`;
+}
+
+/* ---------- Items ops ---------- */
 function addItem(item, source) {
   if (!activeItems[item]) {
     activeItems[item] = { count: 1, sources: new Set([source]) };
@@ -403,12 +457,11 @@ function removeItem(item) {
   }
 }
 
-/* ---------- Render shopping list ---------- */
+/* ---------- Shopping list ---------- */
 function updateCounter() {
   document.getElementById("mealCounter").textContent =
     "Je hebt maaltijden geselecteerd voor " + activeMeals.size + " dagen";
 }
-
 function renderList() {
   const ul = document.getElementById("shoppingList");
   ul.innerHTML = "";
@@ -443,16 +496,6 @@ function renderList() {
   });
 }
 
-/* ---------- Weekly group active state ---------- */
-function updateGroupActiveState(groupName) {
-  const groupBtn = document.querySelector(`#weeklyGroups button[data-group="${groupName}"]`);
-  if (!groupBtn) return;
-  const container = document.getElementById(`group-${groupName}`);
-  const hasActive = Array.from(container.querySelectorAll("button")).some(b => b.classList.contains("active"));
-  const isOpen = container.style.display !== "none";
-  if (hasActive || isOpen) groupBtn.classList.add("active"); else groupBtn.classList.remove("active");
-}
-
 /* ---------- Custom input ---------- */
 function addCustomItem() {
   const input = document.getElementById("customItemInput");
@@ -473,13 +516,17 @@ document.getElementById("customItemInput").addEventListener("keydown", e => {
 document.getElementById("clearListBtn").addEventListener("click", () => {
   activeMeals = new Set();
   activeItems = {};
-  // reset meal buttons
+  // reset meals
   document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
-  // reset weekly item buttons
-  document.querySelectorAll("#expandedWeeklies .pill-row button").forEach(b => b.classList.remove("active"));
-  // collapse groups and reset chevrons
-  document.querySelectorAll("#expandedWeeklies .pill-row").forEach(div => div.style.display = "none");
-  document.querySelectorAll("#weeklyGroups button").forEach(btn => { btn.classList.remove("active"); btn.textContent = "► " + btn.dataset.group; });
+  // reset weekly items
+  document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
+  // close all groups, reset chevrons & badges
+  document.querySelectorAll(".weekly-group").forEach(card => {
+    card.classList.remove("open");
+    card.querySelector(".weekly-group__header").classList.remove("active");
+    card.querySelector(".weekly-group__chev").textContent = "►";
+    updateWeeklyBadge(card.dataset.group);
+  });
   updateCounter();
   renderList();
 });
