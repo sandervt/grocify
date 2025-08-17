@@ -1,516 +1,493 @@
 <!doctype html>
 <html lang="nl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Weekboodschappen</title>
-    <style>
-      :root {
-        --bg: #f1f5f9;
-        --card: #ffffff;
-        --primary: #0f766e;
-        --primary-hover: #14b8a6;
-        --accent: #7c3aed;
-        --danger: #ef4444;
-        --text: #0f172a;
-        --muted: #64748b;
-        --radius: 12px;
-      }
-      body {
-        font-family: "Inter", system-ui, sans-serif;
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        display: flex;
-        justify-content: center;
-        padding: 20px;
-      }
-      .app {
-        width: 100%;
-        max-width: 720px;
-        background: var(--card);
-        border-radius: var(--radius);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        padding: 20px;
-        position: relative;
-        z-index: 1;
-      }
-      h1 {
-        margin-top: 0;
-        font-size: 1.5rem;
-        color: var(--primary);
-      }
-      .section-label {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 16px 0 8px;
-        color: var(--muted);
-      }
-      /* Meal buttons */
-      .meal-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-      .meal-row button {
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 18px;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: 500;
-        transition: background 0.2s;
-      }
-      .meal-row button:hover {
-        background: var(--primary-hover);
-      }
-      .meal-row button.active {
-        background: var(--accent);
-      }
-      /* Weekly category pills */
-      #weeklyGroups {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      #weeklyGroups button {
-        background: #e2e8f0;
-        color: var(--text);
-        border: none;
-        border-radius: 999px;
-        padding: 6px 14px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: background 0.2s;
-      }
-      #weeklyGroups button:hover {
-        background: #cbd5e1;
-      }
-      #weeklyGroups button.active {
-        background: #e2e8f0;
-        color: var(--text);
-        font-weight: 600;
-      }
-      /* Individual weekly items */
-      #expandedWeeklies .pill-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      #expandedWeeklies .pill-row button {
-        background: #e2e8f0;
-        color: var(--text);
-        border: none;
-        border-radius: 999px;
-        padding: 6px 14px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: background 0.2s;
-      }
-      #expandedWeeklies .pill-row button:hover {
-        background: #cbd5e1;
-      }
-      #expandedWeeklies .pill-row button.active {
-        background: var(--accent);
-        color: white;
-      }
-      .counter {
-        font-weight: 500;
-        margin: 16px 0 8px;
-        color: var(--muted);
-      }
-      .shopping-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-      .section-header {
-        margin-top: 16px;
-        font-weight: 600;
-        color: var(--primary);
-        font-size: 1.1rem;
-      }
-      .shopping-list li {
-        padding: 6px 0;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .shopping-list small {
-        color: var(--muted);
-        font-size: 0.75rem;
-      }
-      /* Custom input */
-      .custom-input {
-        display: flex;
-        gap: 8px;
-        margin-top: 20px;
-      }
-      .custom-input input {
-        flex: 1;
-        padding: 8px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: var(--radius);
-        font-size: 0.9rem;
-      }
-      .custom-input button {
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: var(--radius);
-        padding: 8px 14px;
-        cursor: pointer;
-        font-size: 0.9rem;
-      }
-      .custom-input button:hover {
-        background: var(--primary-hover);
-      }
-      .shopping-list li.crossed {
-        text-decoration: line-through;
-        color: var(--muted);
-      }
-      .shopping-list li {
-        cursor: pointer; /* pointer cursor on hover */
-        transition: background 0.2s;
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weekboodschappen</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --primary: #0f766e;
+      --primary-hover: #14b8a6;
+      --accent: #7c3aed;
+      --danger: #ef4444;
+      --text: #0f172a;
+      --muted: #64748b;
+      --radius: 12px;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .app {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+    .section-label {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 16px 0 8px;
+      color: var(--muted);
+    }
 
-      .shopping-list li:hover {
-        background: #f1f5f9; /* subtle hover background */
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app">
-      <h1>Weekboodschappen</h1>
+    /* Meal buttons (bigger, rectangular) */
+    .meal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .meal-row button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .meal-row button:hover { background: var(--primary-hover); }
+    .meal-row button.active { background: var(--accent); }
 
-      <h2 class="section-label">🍲 Maaltijden</h2>
-      <div class="meal-row" id="mealRow"></div>
+    /* Weekly category pills (gray, not purple) */
+    #weeklyGroups {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    #weeklyGroups button {
+      background: #e2e8f0;
+      color: var(--text);
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    #weeklyGroups button:hover { background: #cbd5e1; }
+    /* Bold only when open or has active items inside */
+    #weeklyGroups button.active {
+      background: #e2e8f0;
+      color: var(--text);
+      font-weight: 600;
+    }
 
-      <h2 class="section-label">📦 Weekboodschappen</h2>
-      <div class="pill-row" id="weeklyGroups"></div>
-      <div id="expandedWeeklies"></div>
+    /* Individual weekly items (sub-pills) */
+    #expandedWeeklies .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    #expandedWeeklies .pill-row button {
+      background: #e2e8f0;
+      color: var(--text);
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    #expandedWeeklies .pill-row button:hover { background: #cbd5e1; }
+    #expandedWeeklies .pill-row button.active { background: var(--accent); color: white; }
 
-      <div class="counter" id="mealCounter">
-        Je hebt maaltijden geselecteerd voor 0 dagen
-      </div>
-      <ul class="shopping-list" id="shoppingList"></ul>
+    .counter {
+      font-weight: 500;
+      margin: 16px 0 8px;
+      color: var(--muted);
+    }
 
-      <!-- Custom input field -->
-      <div class="custom-input">
-        <input
-          type="text"
-          id="customItemInput"
-          placeholder="Eigen item toevoegen..."
-        />
-        <button onclick="addCustomItem()">Voeg toe</button>
-      </div>
+    /* Shopping list */
+    .shopping-list { list-style: none; padding: 0; margin: 0; }
+    .section-header {
+      margin-top: 16px;
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 1.1rem;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      cursor: default;
+    }
+    .shopping-list li {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .shopping-list li:hover { background: #f1f5f9; }
+    .shopping-list small { color: var(--muted); font-size: 0.75rem; }
+    .shopping-list li.crossed { text-decoration: line-through; color: var(--muted); }
+
+    /* Custom input */
+    .custom-input { display: flex; gap: 8px; margin-top: 20px; }
+    .custom-input input {
+      flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1;
+      border-radius: var(--radius); font-size: 0.9rem;
+    }
+    .custom-input button {
+      background: var(--primary); color: white; border: none;
+      border-radius: var(--radius); padding: 8px 14px; cursor: pointer; font-size: 0.9rem;
+    }
+    .custom-input button:hover { background: var(--primary-hover); }
+
+    /* Floating clear button */
+    .clear-list {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      transition: background 0.2s;
+    }
+    .clear-list:hover { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Weekboodschappen</h1>
+
+    <h2 class="section-label">🍲 Maaltijden</h2>
+    <div class="meal-row" id="mealRow"></div>
+
+    <h2 class="section-label">📦 Weekboodschappen</h2>
+    <div id="weeklyGroups"></div>
+    <div id="expandedWeeklies"></div>
+
+    <div class="counter" id="mealCounter">Je hebt maaltijden geselecteerd voor 0 dagen</div>
+    <ul class="shopping-list" id="shoppingList"></ul>
+
+    <!-- Custom input field -->
+    <div class="custom-input">
+      <input type="text" id="customItemInput" placeholder="Eigen item toevoegen..." />
+      <button onclick="addCustomItem()">Voeg toe</button>
     </div>
 
-    <script>
-      const sectionOrder = [
-        "Groente & Fruit",
-        "Vega",
-        "Brood",
-        "Ontbijt & Smeersels",
-        "Zuivel",
-        "Pasta & Rijst",
-        "Chips & Snacks",
-        "Diepvries",
-        "Toiletartikelen",
-        "Overige",
-      ];
+    <!-- Floating clear list -->
+    <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
+  </div>
 
-      const mealData = {
-        Pizza: [
-          "Pizzadeeg",
-          "Gesneden Champignons",
-          "Paprika",
-          "Paprika",
-          "Rode Ui",
-          "Tapenade",
-          "Cashewnoten",
-        ],
-        "Sticky Tofu": [
-          "Tofu",
-          "Broccoli",
-          "Rijst azijn",
-          "Maizena",
-          "Sojasaus",
-          "Knoflook",
-        ],
-        "Stamppot Spinazie": [
-          "Burger",
-          "Kruimige Aardappelen",
-          "Spinazie fijn diepvries",
-        ],
-        Pasta: [
-          "Paprika",
-          "Paprika",
-          "Gehakt",
-          "Winterpeen",
-          "Tomatenpuree",
-          "Cherry Tomaten blik",
-          "Saus zongedroogde tomaat",
-          "Ui wit",
-          "Knoflook",
-        ],
-        "Chili Sin Carne": [
-          "Ui wit",
-          "Knoflook",
-          "Koriander",
-          "Chilipoeder",
-          "Komijnzaad",
-          "Zoete Aardappels",
-          "Zoete Aardappels",
-          "Tomatenblokjes (400gr)",
-          "Bosui",
-          "Bosui",
-          "Crème Fraîche (125ml)",
-          "Avocado",
-          "Maïskorrels (100gr)",
-          "Kidneybonen (100gr)",
-        ],
-      };
+<script>
+/* ---------- Sections in walking order ---------- */
+const sectionOrder = [
+  "Groente & Fruit",
+  "Vega",
+  "Brood",
+  "Ontbijt & Smeersels",
+  "Zuivel",
+  "Pasta & Rijst",
+  "Kruiden & Specerijen",
+  "Chips & Snacks",
+  "Non-food",        // before Diepvries
+  "Diepvries",
+  "Toiletartikelen", // last
+  "Eigen"
+];
 
-      const weeklyGroupsData = {
-        Toiletartikelen: [
-          "Toiletpapier",
-          "Zeep",
-          "Wasmiddel",
-          "Shampoo",
-          "Tandpasta",
-          "Afwasmiddel",
-          "Keukenpapier",
-        ],
-        "Ontbijt & Lunch": [
-          "Brood",
-          "Pindakaas",
-          "Hagelslag",
-          "Sojayoghurt",
-          "Havermout",
-          "Havermelk",
-          "Cruesli",
-          "Hummus",
-        ],
-        Vers: [
-          "Blauwe Bessen",
-          "Bananen",
-          "Avocado",
-          "Avocado",
-          "Avocado",
-          "Avocado",
-        ],
-      };
+/* ---------- Meals ---------- */
+const mealData = {
+  "Pizza": [
+    "Pizzadeeg","Gesneden Champignons","Paprika","Paprika",
+    "Rode Ui","Tapenade","Cashewnoten"
+  ],
+  "Sticky Tofu": [
+    "Tofu","Broccoli","Rijst azijn","Maizena","Sojasaus","Knoflook"
+  ],
+  "Stamppot Spinazie": [
+    "Burger","Kruimige Aardappelen","Spinazie fijn diepvries"
+  ],
+  "Pasta": [
+    "Paprika","Paprika","Gehakt","Winterpeen","Tomatenpuree",
+    "Cherry Tomaten blik","Saus zongedroogde tomaat","Ui wit","Knoflook"
+  ],
+  "Chili Sin Carne": [
+    "Ui wit","Knoflook","Koriander","Chilipoeder","Komijnzaad",
+    "Zoete Aardappels","Zoete Aardappels","Tomatenblokjes (400gr)",
+    "Bosui","Bosui","Crème Fraîche (125ml)","Avocado",
+    "Maïskorrels (100gr)","Kidneybonen (100gr)"
+  ],
+  "Couscous Boerenkool": [
+    "Ui wit","Knoflook","Chilipoeder","Boerenkool (300gr)",
+    "Couscous (200gr)","Rozijnen (50gr)","Kruidenbouillon (600ml)"
+  ]
+};
 
-      const itemToSection = {
-        Paprika: "Groente & Fruit",
-        "Rode Ui": "Groente & Fruit",
-        "Ui wit": "Groente & Fruit",
-        Knoflook: "Groente & Fruit",
-        Broccoli: "Groente & Fruit",
-        "Zoete Aardappels": "Groente & Fruit",
-        "Tomatenblokjes (400gr)": "Groente & Fruit",
-        "Cherry Tomaten blik": "Groente & Fruit",
-        Bosui: "Groente & Fruit",
-        Avocado: "Groente & Fruit",
-        "Blauwe Bessen": "Groente & Fruit",
-        Bananen: "Groente & Fruit",
-        Winterpeen: "Groente & Fruit",
-        Tofu: "Vega",
-        Burger: "Vega",
-        Gehakt: "Vega",
-        Brood: "Brood",
-        Pindakaas: "Ontbijt & Smeersels",
-        Hagelslag: "Ontbijt & Smeersels",
-        Sojayoghurt: "Ontbijt & Smeersels",
-        Havermout: "Ontbijt & Smeersels",
-        Havermelk: "Ontbijt & Smeersels",
-        Cruesli: "Ontbijt & Smeersels",
-        Tapenade: "Ontbijt & Smeersels",
-        Hummus: "Ontbijt & Smeersels",
-        "Crème Fraîche (125ml)": "Zuivel",
-        Pizzadeeg: "Pasta & Rijst",
-        "Rijst azijn": "Pasta & Rijst",
-        Maizena: "Pasta & Rijst",
-        Sojasaus: "Pasta & Rijst",
-        Tomatenpuree: "Pasta & Rijst",
-        "Saus zongedroogde tomaat": "Pasta & Rijst",
-        Cashewnoten: "Chips & Snacks",
-        "Spinazie fijn diepvries": "Diepvries",
-        Toiletpapier: "Toiletartikelen",
-        Zeep: "Toiletartikelen",
-        Wasmiddel: "Toiletartikelen",
-        Shampoo: "Toiletartikelen",
-        Tandpasta: "Toiletartikelen",
-        Afwasmiddel: "Toiletartikelen",
-        Keukenpapier: "Toiletartikelen",
-      };
+/* ---------- Weeklies (groups) ---------- */
+const weeklyGroupsData = {
+  "Ontbijt & Lunch": [
+    "Brood","Pindakaas","Hagelslag","Sojayoghurt",
+    "Havermout","Havermelk","Cruesli","Hummus","Rozijnen (50gr)"
+  ],
+  "Toiletartikelen": [
+    "Toiletpapier","Zeep","Wasmiddel","Shampoo",
+    "Tandpasta","Afwasmiddel","Keukenpapier"
+  ],
+  "Vers": [
+    "Blauwe Bessen","Bananen","Avocado","Avocado","Avocado","Avocado"
+  ],
+  "Meisjes": ["Groenvoer","Hooi","Brokjes"],
+  "Baby": ["Luiers","Babydoekjes","Kunstvoeding"],
+  "Appelschilletjes": ["Chocola","Chips","Big Hit","Drop","Apekoppen"]
+};
 
-      let activeMeals = new Set();
-      let activeItems = {};
+/* ---------- Mapping: item → section ---------- */
+const itemToSection = {
+  /* Groente & Fruit */
+  "Paprika": "Groente & Fruit","Rode Ui": "Groente & Fruit","Ui wit": "Groente & Fruit",
+  "Knoflook": "Groente & Fruit","Broccoli": "Groente & Fruit","Zoete Aardappels": "Groente & Fruit",
+  "Gesneden Champignons": "Groente & Fruit","Bosui": "Groente & Fruit",
+  "Avocado": "Groente & Fruit","Blauwe Bessen": "Groente & Fruit","Bananen": "Groente & Fruit",
+  "Winterpeen": "Groente & Fruit","Boerenkool (300gr)": "Groente & Fruit", "Groenvoer": "Groente & Fruit",
 
-      function renderMeals() {
-        const mealRow = document.getElementById("mealRow");
-        mealRow.innerHTML = "";
-        for (let meal in mealData) {
-          const btn = document.createElement("button");
-          btn.textContent = meal;
-          btn.onclick = () => toggleMeal(meal, btn);
-          mealRow.appendChild(btn);
-        }
-      }
-      function renderWeeklies() {
-        const row = document.getElementById("weeklyGroups");
-        row.innerHTML = "";
-        document.getElementById("expandedWeeklies").innerHTML = "";
-        for (let group in weeklyGroupsData) {
-          const btn = document.createElement("button");
-          btn.textContent = "► " + group;
-          btn.dataset.group = group;
-          btn.onclick = () => toggleWeeklyGroup(group, btn);
-          row.appendChild(btn);
+  /* Vega */
+  "Tofu": "Vega","Burger": "Vega","Gehakt": "Vega",
 
-          const container = document.createElement("div");
-          container.id = "group-" + group;
-          container.style.display = "none";
-          container.className = "pill-row";
-          weeklyGroupsData[group].forEach((item) => {
-            const ibtn = document.createElement("button");
-            ibtn.textContent = item;
-            ibtn.onclick = () => toggleItem(item, ibtn, group);
-            container.appendChild(ibtn);
-          });
-          document.getElementById("expandedWeeklies").appendChild(container);
-        }
-      }
-      function toggleMeal(meal, btn) {
-        if (activeMeals.has(meal)) {
-          activeMeals.delete(meal);
-          btn.classList.remove("active");
-          mealData[meal].forEach((i) => removeItem(i));
-        } else {
-          activeMeals.add(meal);
-          btn.classList.add("active");
-          mealData[meal].forEach((i) => addItem(i, meal));
-        }
-        updateCounter();
-        renderList();
-      }
-      function toggleItem(item, btn, group) {
-        if (btn.classList.contains("active")) {
-          btn.classList.remove("active");
-          removeItem(item);
-        } else {
-          btn.classList.add("active");
-          addItem(item, group);
-        }
-        updateGroupActiveState(group);
-        renderList();
-      }
-      function addItem(item, source) {
-        if (!activeItems[item]) {
-          activeItems[item] = { count: 1, sources: new Set([source]) };
-        } else {
-          activeItems[item].count++;
-          activeItems[item].sources.add(source);
-        }
-      }
-      function removeItem(item) {
-        if (activeItems[item]) {
-          activeItems[item].count--;
-          if (activeItems[item].count <= 0) delete activeItems[item];
-        }
-      }
-      function updateCounter() {
-        document.getElementById("mealCounter").textContent =
-          "Je hebt maaltijden geselecteerd voor " + activeMeals.size + " dagen";
-      }
-      function renderList() {
-        const ul = document.getElementById("shoppingList");
-        ul.innerHTML = "";
-        sectionOrder.forEach((section) => {
-          const items = Object.keys(activeItems).filter(
-            (i) => (itemToSection[i] || "Overige") === section,
-          );
-          if (items.length > 0) {
-            const header = document.createElement("li");
-            header.className = "section-header";
-            header.textContent = section;
-            ul.appendChild(header);
-            items.forEach((item) => {
-              const li = document.createElement("li");
-              let label = item;
-              if (activeItems[item].count > 1)
-                label += " (" + activeItems[item].count + "x)";
+  /* Brood */
+  "Brood": "Brood","Pizzadeeg": "Brood",
 
-              const span = document.createElement("span");
-              span.textContent = label;
+  /* Ontbijt & Smeersels */
+  "Pindakaas": "Ontbijt & Smeersels","Hagelslag": "Ontbijt & Smeersels","Sojayoghurt": "Ontbijt & Smeersels",
+  "Havermout": "Ontbijt & Smeersels","Havermelk": "Ontbijt & Smeersels","Cruesli": "Ontbijt & Smeersels",
+  "Tapenade": "Ontbijt & Smeersels","Hummus": "Ontbijt & Smeersels","Rozijnen (50gr)": "Ontbijt & Smeersels",
 
-              const small = document.createElement("small");
-              small.textContent = Array.from(activeItems[item].sources).join(
-                ", ",
-              );
+  /* Zuivel */
+  "Crème Fraîche (125ml)": "Zuivel",
 
-              li.append(span, small);
+  /* Pasta & Rijst */
+  "Rijst azijn": "Pasta & Rijst","Maizena": "Pasta & Rijst","Sojasaus": "Pasta & Rijst",
+  "Tomatenpuree": "Pasta & Rijst","Saus zongedroogde tomaat": "Pasta & Rijst",
+  "Cherry Tomaten blik": "Pasta & Rijst","Tomatenblokjes (400gr)": "Pasta & Rijst",
+  "Couscous (200gr)": "Pasta & Rijst","Kruidenbouillon (600ml)": "Pasta & Rijst",
 
-              // toggle cross-off on click
-              li.onclick = () => {
-                li.classList.toggle("crossed");
-              };
+  /* Kruiden & Specerijen */
+  "Chilipoeder": "Kruiden & Specerijen","Komijnzaad": "Kruiden & Specerijen","Koriander": "Kruiden & Specerijen",
 
-              ul.appendChild(li);
-            });
-          }
-        });
-      }
-      function toggleWeeklyGroup(groupName, groupBtn) {
-        const container = document.getElementById(`group-${groupName}`);
-        const willShow = container.style.display === "none";
-        container.style.display = willShow ? "flex" : "none";
-        groupBtn.textContent = (willShow ? "▼ " : "► ") + groupName;
-        updateGroupActiveState(groupName);
-      }
-      function updateGroupActiveState(groupName) {
-        const groupBtn = document.querySelector(
-          `#weeklyGroups button[data-group="${groupName}"]`,
-        );
-        if (!groupBtn) return;
-        const container = document.getElementById(`group-${groupName}`);
-        const hasActive = Array.from(container.querySelectorAll("button")).some(
-          (b) => b.classList.contains("active"),
-        );
-        const isOpen = container.style.display !== "none";
-        if (hasActive || isOpen) groupBtn.classList.add("active");
-        else groupBtn.classList.remove("active");
-      }
+  /* Chips & Snacks */
+  "Cashewnoten": "Chips & Snacks","Chocola": "Chips & Snacks","Chips": "Chips & Snacks",
+  "Big Hit": "Chips & Snacks","Drop": "Chips & Snacks","Apekoppen": "Chips & Snacks",
 
-      // Custom input
-      function addCustomItem() {
-        const input = document.getElementById("customItemInput");
-        const value = input.value.trim();
-        if (!value) return;
-        addItem(value, "Eigen");
-        renderList();
-        input.value = "";
-      }
-      document
-        .getElementById("customItemInput")
-        .addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            addCustomItem();
-          }
-        });
+  /* Non-food */
+  "Hooi": "Non-food","Brokjes": "Non-food","Luiers": "Non-food",
+  "Babydoekjes": "Non-food","Kunstvoeding": "Non-food",
 
-      renderMeals();
-      renderWeeklies();
-      renderList();
-    </script>
-  </body>
+  /* Diepvries */
+  "Spinazie fijn diepvries": "Diepvries",
+
+  /* Toiletartikelen (own section at the very end) */
+  "Toiletpapier": "Toiletartikelen","Zeep": "Toiletartikelen","Wasmiddel": "Toiletartikelen",
+  "Shampoo": "Toiletartikelen","Tandpasta": "Toiletartikelen","Afwasmiddel": "Toiletartikelen","Keukenpapier": "Toiletartikelen"
+};
+
+/* ---------- State ---------- */
+let activeMeals = new Set();
+let activeItems = {};
+
+/* ---------- UI builders ---------- */
+function renderMeals() {
+  const mealRow = document.getElementById("mealRow");
+  mealRow.innerHTML = "";
+  for (let meal in mealData) {
+    const btn = document.createElement("button");
+    btn.textContent = meal;
+    btn.onclick = () => toggleMeal(meal, btn);
+    mealRow.appendChild(btn);
+  }
+}
+
+function renderWeeklies() {
+  const row = document.getElementById("weeklyGroups");
+  row.innerHTML = "";
+  document.getElementById("expandedWeeklies").innerHTML = "";
+
+  const groupNames = Object.keys(weeklyGroupsData);
+  groupNames.forEach(group => {
+    const btn = document.createElement("button");
+    btn.textContent = "► " + group;
+    btn.dataset.group = group;
+    btn.onclick = () => toggleWeeklyGroup(group, btn);
+    row.appendChild(btn);
+
+    const container = document.createElement("div");
+    container.id = "group-" + group;
+    container.style.display = "none";
+    container.className = "pill-row";
+    weeklyGroupsData[group].forEach(item => {
+      const ibtn = document.createElement("button");
+      ibtn.textContent = item;
+      ibtn.onclick = () => toggleItem(item, ibtn, group);
+      container.appendChild(ibtn);
+    });
+    document.getElementById("expandedWeeklies").appendChild(container);
+  });
+}
+
+/* ---------- Interactions ---------- */
+function toggleMeal(meal, btn) {
+  if (activeMeals.has(meal)) {
+    activeMeals.delete(meal);
+    btn.classList.remove("active");
+    mealData[meal].forEach(i => removeItem(i));
+  } else {
+    activeMeals.add(meal);
+    btn.classList.add("active");
+    mealData[meal].forEach(i => addItem(i, meal));
+  }
+  updateCounter();
+  renderList();
+}
+
+function toggleItem(item, btn, group) {
+  if (btn.classList.contains("active")) {
+    btn.classList.remove("active");
+    removeItem(item);
+  } else {
+    btn.classList.add("active");
+    addItem(item, group);
+  }
+  updateGroupActiveState(group);
+  renderList();
+}
+
+function toggleWeeklyGroup(groupName, groupBtn) {
+  const container = document.getElementById(`group-${groupName}`);
+  const willShow = container.style.display === "none";
+  container.style.display = willShow ? "flex" : "none";
+  groupBtn.textContent = (willShow ? "▼ " : "► ") + groupName;
+  updateGroupActiveState(groupName);
+}
+
+/* ---------- Items data ops ---------- */
+function addItem(item, source) {
+  if (!activeItems[item]) {
+    activeItems[item] = { count: 1, sources: new Set([source]) };
+  } else {
+    activeItems[item].count++;
+    activeItems[item].sources.add(source);
+  }
+}
+function removeItem(item) {
+  if (activeItems[item]) {
+    activeItems[item].count--;
+    if (activeItems[item].count <= 0) delete activeItems[item];
+  }
+}
+
+/* ---------- Render shopping list ---------- */
+function updateCounter() {
+  document.getElementById("mealCounter").textContent =
+    "Je hebt maaltijden geselecteerd voor " + activeMeals.size + " dagen";
+}
+
+function renderList() {
+  const ul = document.getElementById("shoppingList");
+  ul.innerHTML = "";
+
+  sectionOrder.forEach(section => {
+    const items = Object.keys(activeItems).filter(i => (itemToSection[i] || "Eigen") === section);
+    if (items.length > 0) {
+      const header = document.createElement("li");
+      header.className = "section-header";
+      header.textContent = section;
+      ul.appendChild(header);
+
+      items.forEach(item => {
+        const li = document.createElement("li");
+        let label = item;
+        if (activeItems[item].count > 1) label += " (" + activeItems[item].count + "x)";
+
+        const span = document.createElement("span");
+        span.textContent = label;
+
+        const small = document.createElement("small");
+        small.textContent = Array.from(activeItems[item].sources).join(", ");
+
+        li.append(span, small);
+
+        // cross off on click
+        li.onclick = () => { li.classList.toggle("crossed"); };
+
+        ul.appendChild(li);
+      });
+    }
+  });
+}
+
+/* ---------- Weekly group active state ---------- */
+function updateGroupActiveState(groupName) {
+  const groupBtn = document.querySelector(`#weeklyGroups button[data-group="${groupName}"]`);
+  if (!groupBtn) return;
+  const container = document.getElementById(`group-${groupName}`);
+  const hasActive = Array.from(container.querySelectorAll("button")).some(b => b.classList.contains("active"));
+  const isOpen = container.style.display !== "none";
+  if (hasActive || isOpen) groupBtn.classList.add("active"); else groupBtn.classList.remove("active");
+}
+
+/* ---------- Custom input ---------- */
+function addCustomItem() {
+  const input = document.getElementById("customItemInput");
+  const value = input.value.trim();
+  if (!value) return;
+  addItem(value, "Eigen");
+  renderList();
+  input.value = "";
+}
+document.getElementById("customItemInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    addCustomItem();
+  }
+});
+
+/* ---------- Clear list ---------- */
+document.getElementById("clearListBtn").addEventListener("click", () => {
+  activeMeals = new Set();
+  activeItems = {};
+  // reset meal buttons
+  document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
+  // reset weekly item buttons
+  document.querySelectorAll("#expandedWeeklies .pill-row button").forEach(b => b.classList.remove("active"));
+  // collapse groups and reset chevrons
+  document.querySelectorAll("#expandedWeeklies .pill-row").forEach(div => div.style.display = "none");
+  document.querySelectorAll("#weeklyGroups button").forEach(btn => { btn.classList.remove("active"); btn.textContent = "► " + btn.dataset.group; });
+  updateCounter();
+  renderList();
+});
+
+/* ---------- Init ---------- */
+renderMeals();
+renderWeeklies();
+renderList();
+</script>
+</body>
 </html>
