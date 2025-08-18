@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:,">
   <title>Weekboodschappen</title>
 
   <!-- ✅ Single set of Firebase compat SDKs (v10) -->
@@ -257,10 +258,12 @@
   const addCancel = document.getElementById("addCancel");
   const suggBox = document.getElementById("suggestions");
 
-  let KNOWN_ITEMS = getKnownItems();
+
+  let KNOWN_ITEMS = [];
+  function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
 
   fab.addEventListener("click", () => {
-    KNOWN_ITEMS = getKnownItems();           // refresh from latest cloud
+    refreshKnownItems();
     suggBox.innerHTML = "";
     addInput.value = "";
     dlg.showModal();
@@ -357,6 +360,8 @@
     "Toiletpapier":"Toiletartikelen","Zeep":"Toiletartikelen","Wasmiddel":"Toiletartikelen",
     "Shampoo":"Toiletartikelen","Tandpasta":"Toiletartikelen","Afwasmiddel":"Toiletartikelen","Keukenpapier":"Toiletartikelen"
   };
+
+  refreshKnownItems();
 
   /* ---------- Local (derived from cloud) ---------- */
   let activeMeals = new Set();  // persisted via stateDoc
@@ -603,6 +608,7 @@
         checked: !!d.checked
       };
     });
+    refreshKnownItems();
     renderList();
     syncWeeklySelectionsFromCloud();
     updateAllWeeklyBadges();
