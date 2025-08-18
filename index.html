@@ -55,9 +55,6 @@
     .custom-input button { background:var(--primary); color:#fff; border:none; border-radius:var(--radius); padding:8px 14px; cursor:pointer; font-size:.9rem; }
     .custom-input button:hover { background:var(--primary-hover); }
 
-    .clear-list { position:fixed; bottom:20px; right:20px; background:var(--danger); color:#fff; border:none; border-radius:999px; padding:10px 16px; font-size:.85rem; font-weight:500; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.15); transition:background .2s; }
-    .clear-list:hover { background:#dc2626; }
-
     .section__badge {
       margin-left: auto;
       background: #e2e8f0;
@@ -108,45 +105,33 @@
 
   /* Optional: slimmer scrollbar */
   .meal-row::-webkit-scrollbar { height: 6px; }
-  .meal-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
-
-  /* --- Compact mode: smaller paddings & font sizes --- */
-  body.dense .meal-row button { padding: 8px 12px; font-size: .9rem; }
-  body.dense .weekly-group__content button { padding: 4px 10px; font-size: .8rem; }
-  body.dense .shopping-list li { padding: 4px 8px; }
-  body.dense .section-header { margin-top: 10px; font-size: 1rem; }
-  body.dense .custom-input { margin-top: 12px; }
-  body.dense .custom-input input { padding: 6px 10px; font-size: .85rem; }
-  body.dense .custom-input button { padding: 6px 10px; font-size: .85rem; }
-
-  /* Compact toggle button */
-  .compact-toggle {
-    position: absolute; top: 16px; right: 16px;
-    background: #e2e8f0; border: none; border-radius: 999px;
-    padding: 6px 10px; font-size: .8rem; color: #0f172a; cursor: pointer;
-  }
-  .compact-toggle:hover { background: #cbd5e1; }
+  .meal-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }  
 
   /* Counter closer to sections */
   .counter { margin: 10px 0 8px; }
 
-/* Floating action button (add item) */
+  /* Floating action button (add item) */
   .fab {
     position: fixed;
     left: 16px;
-    bottom: 90px;    /* ← was too low, now floats above tabbar */
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: none;
-    background: var(--accent, #3b82f6);
-    color: #fff;
-    font-size: 28px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    cursor: pointer;
-    z-index: 200;    /* ensure above tabbar */
+    bottom: 90px;     /* above tabbar */
+    width: 56px; height: 56px; border-radius: 50%;
+    border: none; background: var(--accent); color: #fff;
+    font-size: 28px; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    cursor: pointer; z-index: 200;
   }
-  .fab:hover { filter: brightness(1.05); }
+
+  /* Clear list button */
+  .clear-list {
+    position: fixed;
+    right: 16px;
+    bottom: 90px;     /* above tabbar */
+    background: var(--danger); color: #fff; border: none;
+    border-radius: 999px; padding: 10px 16px; font-size: .85rem; font-weight: 500;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    z-index: 200;
+  }
+  .clear-list:hover { background: #dc2626; }
 
   dialog { border: none; border-radius: var(--radius); padding: 16px; width: 90%; max-width: 420px; }
   .add-form h3 { margin: 0 0 8px; }
@@ -166,7 +151,7 @@
   .tabpage.active { display: block; }
 
   /* Make space so the tabbar doesn't overlap content or floating buttons */
-  .app { padding-bottom: 76px; }
+  .app { padding-bottom: 110px; }
 
   /* --- Bottom tab bar --- */
   .tabbar {
@@ -695,6 +680,7 @@
       }
     });
   }
+const compactBtn = document.getElementById('compactBtn');
 
   // Persist open/closed state of the two top sections
   const mealsDetails = document.getElementById('sec-meals');
@@ -724,19 +710,6 @@
   }
   wireDetails(mealsDetails);
   wireDetails(weekliesDetails);
-
-  // Compact mode toggle
-  const compactBtn = document.getElementById('compactBtn');
-  const COMPACT_KEY = 'ui-compact';
-  if (localStorage.getItem(COMPACT_KEY) === 'true') document.body.classList.add('dense');
-  compactBtn.textContent = document.body.classList.contains('dense') ? 'Normaal' : 'Compact';
-
-  compactBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dense');
-    const enabled = document.body.classList.contains('dense');
-    localStorage.setItem(COMPACT_KEY, String(enabled));
-    compactBtn.textContent = enabled ? 'Normaal' : 'Compact';
-  });
 
   /* ---------- Clear list ---------- */
   document.getElementById("clearListBtn").addEventListener("click", async () => {
