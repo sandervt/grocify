@@ -130,12 +130,21 @@
   /* Counter closer to sections */
   .counter { margin: 10px 0 8px; }
 
+/* Floating action button (add item) */
   .fab {
-    position: fixed; bottom: 20px; left: 20px;
-    width: 52px; height: 52px; border-radius: 50%;
-    border: none; background: var(--accent); color: #fff;
-    font-size: 28px; line-height: 0; box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    position: fixed;
+    left: 16px;
+    bottom: 90px;    /* ← was too low, now floats above tabbar */
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent, #3b82f6);
+    color: #fff;
+    font-size: 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     cursor: pointer;
+    z-index: 200;    /* ensure above tabbar */
   }
   .fab:hover { filter: brightness(1.05); }
 
@@ -182,9 +191,6 @@
   <div class="app">
     <h1>Weekboodschappen</h1>
 
-      <!-- Compact toggle stays where it is -->
-  <button id="compactBtn" class="compact-toggle" title="Compacte modus">Compact</button>
-
   <!-- TAB: LIST (current UI) -->
   <section id="tab-list" class="tabpage active">
     <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
@@ -210,11 +216,6 @@
     </details>
 
     <ul class="shopping-list" id="shoppingList"></ul>
-
-    <div class="custom-input">
-      <input type="text" id="customItemInput" placeholder="Eigen item toevoegen..." />
-      <button id="customAddBtn">Voeg toe</button>
-    </div>
 
     <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
     <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
@@ -693,20 +694,6 @@
         });
       }
     });
-  }
-
-  /* ---------- Custom input ---------- */
-  document.getElementById("customAddBtn").addEventListener("click", addCustomItem);
-  document.getElementById("customItemInput").addEventListener("keydown", e => {
-    if(e.key === "Enter"){ e.preventDefault(); addCustomItem(); }
-  });
-  function addCustomItem(){
-    const input = document.getElementById("customItemInput");
-    const value = input.value.trim();
-    if(!value) return;
-    const sec = itemToSection[value] || "Eigen";
-    cloudAddItem(value, sec, "Eigen");
-    input.value = "";
   }
 
   // Persist open/closed state of the two top sections
