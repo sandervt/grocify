@@ -94,14 +94,25 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
 
+<!-- Firebase compat SDKs (v10) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<!-- If you enabled App Check enforcement in the console, uncomment the line below -->
+<!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
+
 <script>
-/* ---------- Firebase init (fill your config) ---------- */
+/* ---------- Firebase init ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyCZWsoDIQYwCF-V2QuvYjxrFGB84gRnHFo",
   authDomain: "grocify-2fd51.firebaseapp.com",
   projectId: "grocify-2fd51"
 };
 firebase.initializeApp(firebaseConfig);
+
+// Optional: App Check (only if you enforced it in Firebase console)
+// firebase.appCheck().activate('YOUR_RECAPTCHA_V3_SITE_KEY', true);
+
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
@@ -193,23 +204,31 @@ let activeItems = {};         // { name: { count, sources:Set, checked } }
 /* ---------- Auth + realtime ---------- */
 auth.signInAnonymously().catch(console.error);
 auth.onAuthStateChanged(async () => {
-  try { await db.enablePersistence(); } catch(e) { /* ok if not supported */ }
-  itemsCol.onSnapshot(snap => {
-    const docs = snap.docs.map(d => d.data());
-    setActiveFromCloud(docs);
-  });
+  try { await firebase.firestore().enablePersistence({ synchronizeTabs: true }); } catch(e) { /* ok if not supported */ }
+  itemsCol.onSnapshot(
+    snap => {
+      const docs = snap.docs.map(d => d.data());
+      setActiveFromCloud(docs);
+    },
+    err => console.error("onSnapshot error", err)
+  );
 });
 
 /* ---------- Cloud writes ---------- */
 async function cloudAddItem(name, section, origin){
-  const id = slug(name);
-  await itemsCol.doc(id).set({
-    name, section,
-    count: inc(1),
-    origins: arrAdd(origin),
-    checked: false,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge:true });
+  try {
+    const id = slug(name);
+    await itemsCol.doc(id).set({
+      name, section,
+      count: inc(1),
+      origins: arrAdd(origin),
+      checked: false,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge:true });
+  } catch (err) {
+    console.error("cloudAddItem failed", err);
+    alert("Kon item niet toevoegen: " + err.message);
+  }
 }
 async function cloudRemoveItem(name, origin){
   const id = slug(name);
