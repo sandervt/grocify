@@ -56,6 +56,16 @@
 
     .clear-list { position:fixed; bottom:20px; right:20px; background:var(--danger); color:#fff; border:none; border-radius:999px; padding:10px 16px; font-size:.85rem; font-weight:500; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.15); transition:background .2s; }
     .clear-list:hover { background:#dc2626; }
+
+    .section__badge {
+      margin-left: auto;
+      background: #e2e8f0;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      color: #0f172a;
+    }
+
     /* --- Collapsible sections --- */
   details.section {
     border: 1px solid #e2e8f0;
@@ -128,11 +138,15 @@
     <button id="compactBtn" class="compact-toggle" title="Compacte modus">Compact</button>
 
     <details id="sec-meals" class="section" open>
-      <summary><span class="section__chev">▼</span> 🍲 Maaltijden</summary>
+      <summary>
+        <span class="section__chev">▼</span> 🍲 Maaltijden
+        <span id="mealCounter" class="section__badge">0 dagen</span>
+      </summary>
       <div class="section__body">
         <div class="meal-row" id="mealRow"></div>
       </div>
     </details>
+    
 
     <details id="sec-weeklies" class="section" open>
       <summary><span class="section__chev">▼</span> 📦 Weekboodschappen</summary>
@@ -141,7 +155,6 @@
       </div>
     </details>
 
-    <div class="counter" id="mealCounter">Je hebt maaltijden geselecteerd voor 0 dagen</div>
     <ul class="shopping-list" id="shoppingList"></ul>
 
     <div class="custom-input">
@@ -439,9 +452,12 @@
 
   /* ---------- Shopping list ---------- */
   function updateCounter(){
-    document.getElementById("mealCounter").textContent =
-      "Je hebt maaltijden geselecteerd voor " + activeMeals.size + " dagen";
+    const el = document.getElementById("mealCounter");
+    if(!el) return;
+    const n = activeMeals.size;
+    el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
   }
+
   function setActiveFromCloud(cloudDocs){
     activeItems = {};
     cloudDocs.forEach(d => {
