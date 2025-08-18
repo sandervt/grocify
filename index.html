@@ -152,13 +152,42 @@
   #addConfirm { background: var(--primary); color: #fff; }
   #addCancel { background: #e2e8f0; }
 
+  /* --- Tabs / pages --- */
+  .tabpage { display: none; }
+  .tabpage.active { display: block; }
+
+  /* Make space so the tabbar doesn't overlap content or floating buttons */
+  .app { padding-bottom: 76px; }
+
+  /* --- Bottom tab bar --- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #ffffff; border-top: 1px solid #e2e8f0;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 0; z-index: 50;
+  }
+  .tabbar button {
+    appearance: none; border: none; background: transparent;
+    padding: 10px 6px; font-size: .9rem; color: #475569;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer;
+  }
+  .tabbar button span { font-size: 1.1rem; line-height: 1; }
+  .tabbar button.active { color: var(--accent); font-weight: 600; }
+
+
   </style>
 </head>
 <body>
   <div class="app">
     <h1>Weekboodschappen</h1>
 
-    <button id="compactBtn" class="compact-toggle" title="Compacte modus">Compact</button>
+      <!-- Compact toggle stays where it is -->
+  <button id="compactBtn" class="compact-toggle" title="Compacte modus">Compact</button>
+
+  <!-- TAB: LIST (current UI) -->
+  <section id="tab-list" class="tabpage active">
+    <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
 
     <details id="sec-meals" class="section" open>
       <summary>
@@ -169,7 +198,6 @@
         <div class="meal-row" id="mealRow"></div>
       </div>
     </details>
-    
 
     <details id="sec-weeklies" class="section" open>
       <summary>
@@ -179,7 +207,7 @@
       <div class="section__body">
         <div id="weeklyAccordion" class="weekly-accordion"></div>
       </div>
-    </details>    
+    </details>
 
     <ul class="shopping-list" id="shoppingList"></ul>
 
@@ -188,6 +216,7 @@
       <button id="customAddBtn">Voeg toe</button>
     </div>
 
+    <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
     <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
     <dialog id="addDialog">
       <form method="dialog" id="addForm" class="add-form">
@@ -202,6 +231,30 @@
     </dialog>
 
     <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
+  </section>
+
+  <!-- TAB: RECIPES (placeholder for M3) -->
+  <section id="tab-recipes" class="tabpage">
+    <div class="section__body" style="padding:16px">
+      <h2 style="margin:0 0 8px;">🍳 Recepten</h2>
+      <p style="color:#64748b; margin:0;">Hier komt je receptenbeheer (M3). Voor nu: geen logica gewijzigd.</p>
+    </div>
+  </section>
+
+  <!-- TAB: STORES (placeholder for M4) -->
+  <section id="tab-stores" class="tabpage">
+    <div class="section__body" style="padding:16px">
+      <h2 style="margin:0 0 8px;">🏬 Winkels</h2>
+      <p style="color:#64748b; margin:0;">Hier beheer je winkelprofielen en categorievolgorde (M4).</p>
+    </div>
+  </section>
+
+  <!-- Bottom tab bar -->
+  <nav class="tabbar" role="tablist" aria-label="Navigatie">
+    <button id="tabbtn-list"   role="tab" aria-controls="tab-list"><span>📝</span>Lijst</button>
+    <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
+    <button id="tabbtn-stores"  role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
+  </nav>
   </div>
   <script>
   /* ---------- Firebase init ---------- */
@@ -710,6 +763,63 @@
     });
     updateCounter();
   });
+
+  (function(){
+    const TABS = ["list","recipes","stores"];
+    const DEFAULT_TAB = "list";
+    const STORAGE_KEY = "ui-active-tab";
+
+    const pages = {
+      list:    document.getElementById("tab-list"),
+      recipes: document.getElementById("tab-recipes"),
+      stores:  document.getElementById("tab-stores"),
+    };
+    const buttons = {
+      list:    document.getElementById("tabbtn-list"),
+      recipes: document.getElementById("tabbtn-recipes"),
+      stores:  document.getElementById("tabbtn-stores"),
+    };
+
+    function setActive(name){
+      // pages
+      Object.entries(pages).forEach(([k,el]) => el.classList.toggle("active", k===name));
+      // buttons
+      Object.entries(buttons).forEach(([k,btn]) => {
+        const isActive = k===name;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+        btn.setAttribute("tabindex", isActive ? "0" : "-1");
+      });
+      // remember
+      localStorage.setItem(STORAGE_KEY, name);
+    }
+
+    function normalize(hash){
+      const key = (hash || "").replace(/^#/, "");
+      if (TABS.includes(key)) return key;
+      return null;
+    }
+
+    function syncFromHash(){
+      const byHash = normalize(location.hash);
+      const remembered = localStorage.getItem(STORAGE_KEY);
+      const target = byHash || (TABS.includes(remembered) ? remembered : DEFAULT_TAB);
+      if (!byHash) history.replaceState(null, "", "#" + target);
+      setActive(target);
+    }
+
+    // click handlers
+    Object.entries(buttons).forEach(([name,btn]) => {
+      btn.addEventListener("click", () => {
+        if (location.hash !== "#" + name) location.hash = name;
+        else setActive(name); // allow re-click to re-apply focus/aria
+      });
+    });
+
+    window.addEventListener("hashchange", syncFromHash);
+    // kick off
+    syncFromHash();
+  })();
 
   /* ---------- Init ---------- */
   renderMeals();
