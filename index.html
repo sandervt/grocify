@@ -101,6 +101,12 @@
 <!-- If you enabled App Check enforcement in the console, uncomment the line below -->
 <!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
 
+<!-- Firebase compat SDKs (v10) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
+
 <script>
 /* ---------- Firebase init ---------- */
 const firebaseConfig = {
@@ -109,8 +115,6 @@ const firebaseConfig = {
   projectId: "grocify-2fd51"
 };
 firebase.initializeApp(firebaseConfig);
-
-// Optional: App Check (only if you enforced it in Firebase console)
 // firebase.appCheck().activate('YOUR_RECAPTCHA_V3_SITE_KEY', true);
 
 const auth = firebase.auth();
@@ -119,6 +123,7 @@ const db   = firebase.firestore();
 /* One shared list for everyone */
 const HOUSEHOLD_ID = "shared";
 const itemsCol = db.collection('households').doc(HOUSEHOLD_ID).collection('listItems');
+const stateDoc = db.collection('households').doc(HOUSEHOLD_ID).collection('meta').doc('uiState');
 
 /* Helpers */
 const inc    = firebase.firestore.FieldValue.increment;
@@ -198,20 +203,30 @@ const itemToSection = {
 };
 
 /* ---------- Local (derived from cloud) ---------- */
-let activeMeals = new Set();  // only for the counter
+let activeMeals = new Set();  // persisted via stateDoc
 let activeItems = {};         // { name: { count, sources:Set, checked } }
 
 /* ---------- Auth + realtime ---------- */
 auth.signInAnonymously().catch(console.error);
 auth.onAuthStateChanged(async () => {
   try { await firebase.firestore().enablePersistence({ synchronizeTabs: true }); } catch(e) { /* ok if not supported */ }
+
+  // Live list items
   itemsCol.onSnapshot(
     snap => {
       const docs = snap.docs.map(d => d.data());
       setActiveFromCloud(docs);
     },
-    err => console.error("onSnapshot error", err)
+    err => console.error("onSnapshot items error", err)
   );
+
+  // Live meal pill state
+  stateDoc.onSnapshot(doc => {
+    const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
+    activeMeals = new Set(arr);
+    reflectMealPillsFromState();
+    updateCounter();
+  }, err => console.error("onSnapshot state error", err));
 });
 
 /* ---------- Cloud writes ---------- */
@@ -245,11 +260,22 @@ async function cloudRemoveItem(name, origin){
 async function cloudToggleChecked(name, checked){
   await itemsCol.doc(slug(name)).set({ checked }, { merge:true });
 }
+// Persist active meal pills to Firestore
+async function saveMealState(){
+  try {
+    await stateDoc.set({ activeMeals: Array.from(activeMeals) }, { merge: true });
+  } catch (e) {
+    console.error("saveMealState failed", e);
+  }
+}
 async function cloudClearList(){
   const snap = await itemsCol.get();
   const batch = db.batch();
   snap.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
+  // also clear meal pill state
+  activeMeals = new Set();
+  await saveMealState();
 }
 
 /* ---------- Meals UI ---------- */
@@ -259,9 +285,10 @@ function renderMeals(){
   for(const meal in mealData){
     const btn = document.createElement("button");
     btn.textContent = meal;
+    btn.dataset.meal = meal;
     btn.onclick = async () => {
-      const isActive = btn.classList.toggle("active");
-      if(isActive){
+      const willActivate = !btn.classList.contains("active");
+      if(willActivate){
         activeMeals.add(meal);
         for(const item of mealData[meal]){
           const sec = itemToSection[item] || "Eigen";
@@ -273,10 +300,22 @@ function renderMeals(){
           cloudRemoveItem(item, meal);
         }
       }
+      btn.classList.toggle("active", willActivate);
       updateCounter();
+      await saveMealState();
     };
     row.appendChild(btn);
   }
+  // reflect current state after rendering
+  reflectMealPillsFromState();
+}
+function reflectMealPillsFromState(){
+  const row = document.getElementById("mealRow");
+  if(!row) return;
+  row.querySelectorAll("button[data-meal]").forEach(btn => {
+    const meal = btn.dataset.meal;
+    btn.classList.toggle("active", activeMeals.has(meal));
+  });
 }
 
 /* ---------- Weeklies Accordion UI ---------- */
@@ -456,7 +495,6 @@ function addCustomItem(){
 /* ---------- Clear list ---------- */
 document.getElementById("clearListBtn").addEventListener("click", async () => {
   await cloudClearList();
-  activeMeals = new Set();
   document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
   document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
   document.querySelectorAll(".weekly-group").forEach(card => {
