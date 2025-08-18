@@ -361,12 +361,12 @@
     "Shampoo":"Toiletartikelen","Tandpasta":"Toiletartikelen","Afwasmiddel":"Toiletartikelen","Keukenpapier":"Toiletartikelen"
   };
 
-  refreshKnownItems();
-
   /* ---------- Local (derived from cloud) ---------- */
   let activeMeals = new Set();  // persisted via stateDoc
   let activeItems = {};         // { name: { count, sources:Set, checked } }
 
+  refreshKnownItems();
+  
   /* ---------- Auth + realtime ---------- */
   auth.signInAnonymously().catch(console.error);
   auth.onAuthStateChanged(async () => {
