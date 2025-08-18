@@ -129,6 +129,28 @@
   /* Counter closer to sections */
   .counter { margin: 10px 0 8px; }
 
+  .fab {
+    position: fixed; bottom: 20px; left: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: none; background: var(--accent); color: #fff;
+    font-size: 28px; line-height: 0; box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    cursor: pointer;
+  }
+  .fab:hover { filter: brightness(1.05); }
+
+  dialog { border: none; border-radius: var(--radius); padding: 16px; width: 90%; max-width: 420px; }
+  .add-form h3 { margin: 0 0 8px; }
+  .add-form input { width: 100%; padding: 10px; border:1px solid #cbd5e1; border-radius: 10px; margin-bottom: 8px; }
+  .suggestions { display: grid; gap: 6px; max-height: 220px; overflow: auto; }
+  .suggestions button {
+    text-align: left; border: 1px solid #e2e8f0; background:#fff; border-radius: 8px; padding: 8px 10px; cursor: pointer;
+  }
+  .suggestions button:hover { background:#f8fafc; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+  .actions button { padding: 8px 12px; border:none; border-radius: 8px; }
+  #addConfirm { background: var(--primary); color: #fff; }
+  #addCancel { background: #e2e8f0; }
+
   </style>
 </head>
 <body>
@@ -165,6 +187,19 @@
       <button id="customAddBtn">Voeg toe</button>
     </div>
 
+    <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
+    <dialog id="addDialog">
+      <form method="dialog" id="addForm" class="add-form">
+        <h3>Item toevoegen</h3>
+        <input id="addInput" type="text" placeholder="Bijv. Paprika" autocomplete="off" />
+        <div id="suggestions" class="suggestions"></div>
+        <div class="actions">
+          <button value="cancel" type="button" id="addCancel">Annuleren</button>
+          <button value="ok" id="addConfirm">Toevoegen</button>
+        </div>
+      </form>
+    </dialog>
+
     <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
   </div>
   <script>
@@ -190,6 +225,88 @@
   const arrAdd = firebase.firestore.FieldValue.arrayUnion;
   const arrDel = firebase.firestore.FieldValue.arrayRemove;
   function slug(name){ return name.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^\w-]/g,''); }
+  
+  // Build a known-items index from what we already ship in code or saw in cloud
+  function getKnownItems(){
+    const fromMap   = Object.keys(itemToSection);
+    const fromMeals = Object.values(mealData).flat();
+    const fromWk    = Object.values(weeklyGroupsData).flat();
+    const fromCloud = Object.keys(activeItems);
+    return Array.from(new Set([...fromMap, ...fromMeals, ...fromWk, ...fromCloud])).sort((a,b)=>a.localeCompare(b));
+  }
+
+  function inferSection(name){
+    return itemToSection[name] || "Eigen";
+  }
+
+  function normalize(s){ return s.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,""); } // basic diacritics-safe
+  function suggestMatches(query, pool, limit=8){
+    const q = normalize(query).trim();
+    if(!q) return [];
+    // startsWith first, then includes
+    const starts = pool.filter(x => normalize(x).startsWith(q));
+    const incl   = pool.filter(x => normalize(x).includes(q) && !starts.includes(x));
+    return [...starts, ...incl].slice(0, limit);
+  }
+
+  // --- FAB + Add dialog ---
+  const fab = document.getElementById("fabAdd");
+  const dlg = document.getElementById("addDialog");
+  const addInput = document.getElementById("addInput");
+  const addConfirm = document.getElementById("addConfirm");
+  const addCancel = document.getElementById("addCancel");
+  const suggBox = document.getElementById("suggestions");
+
+  let KNOWN_ITEMS = getKnownItems();
+
+  fab.addEventListener("click", () => {
+    KNOWN_ITEMS = getKnownItems();           // refresh from latest cloud
+    suggBox.innerHTML = "";
+    addInput.value = "";
+    dlg.showModal();
+    setTimeout(()=> addInput.focus(), 0);
+  });
+
+  addCancel.addEventListener("click", () => dlg.close());
+
+  addInput.addEventListener("input", () => {
+    const q = addInput.value;
+    const matches = suggestMatches(q, KNOWN_ITEMS);
+    suggBox.innerHTML = "";
+    matches.forEach(name => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = name + " · " + inferSection(name);
+      b.addEventListener("click", async () => {
+        await addName(name);
+        addInput.value = ""; dlg.close();
+      });
+      suggBox.appendChild(b);
+    });
+  });
+
+  addInput.addEventListener("keydown", async (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      if(!addInput.value.trim()) return;
+      await addName(addInput.value.trim());
+      addInput.value = "";
+      dlg.close();
+    }
+  });
+
+  addConfirm.addEventListener("click", async (e) => {
+    e.preventDefault();
+    if(!addInput.value.trim()) return;
+    await addName(addInput.value.trim());
+    addInput.value = "";
+    dlg.close();
+  });
+
+  async function addName(name){
+    const sec = inferSection(name);
+    await cloudAddItem(name, sec, "Eigen");   // origin = Eigen (manual add)
+  }
 
   /* ---------- Supermarket order ---------- */
   const sectionOrder = [
