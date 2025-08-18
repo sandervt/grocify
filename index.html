@@ -149,11 +149,14 @@
     
 
     <details id="sec-weeklies" class="section" open>
-      <summary><span class="section__chev">▼</span> 📦 Weekboodschappen</summary>
+      <summary>
+        <span class="section__chev">▼</span> 📦 Weekboodschappen
+        <span id="weeklyCounter" class="section__badge">0 items</span>
+      </summary>
       <div class="section__body">
         <div id="weeklyAccordion" class="weekly-accordion"></div>
       </div>
-    </details>
+    </details>    
 
     <ul class="shopping-list" id="shoppingList"></ul>
 
@@ -448,6 +451,7 @@
       });
       updateWeeklyBadge(group);
     });
+    updateWeeklyHeaderCounter();
   }
 
   /* ---------- Shopping list ---------- */
@@ -458,15 +462,36 @@
     el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
   }
 
+  function updateWeeklyHeaderCounter(){
+    const el = document.getElementById("weeklyCounter");
+    if(!el) return;
+
+    const weeklyGroups = new Set(Object.keys(weeklyGroupsData));
+    // Count unique items that have at least one weekly-group source
+    let count = 0;
+    for (const data of Object.values(activeItems)) {
+      // data.sources is a Set
+      const hasWeeklySource = [...data.sources].some(src => weeklyGroups.has(src));
+      if (hasWeeklySource) count++;
+    }
+    el.textContent = count === 1 ? "1 item" : `${count} items`;
+  }
+
   function setActiveFromCloud(cloudDocs){
     activeItems = {};
     cloudDocs.forEach(d => {
-      activeItems[d.name] = { count: d.count || 1, sources: new Set(d.origins || []), checked: !!d.checked };
+      activeItems[d.name] = {
+        count: d.count || 1,
+        sources: new Set(d.origins || []),
+        checked: !!d.checked
+      };
     });
     renderList();
     syncWeeklySelectionsFromCloud();
     updateAllWeeklyBadges();
+    updateWeeklyHeaderCounter();
   }
+
   function renderList(){
     const ul = document.getElementById("shoppingList");
     ul.innerHTML = "";
