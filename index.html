@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="nl">
 <head>
+  <!-- Firebase v10 compat (keeps window.firebase namespace) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+  <!-- Only if you enabled App Check enforcement; otherwise omit -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Weekboodschappen</title>
