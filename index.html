@@ -56,17 +56,90 @@
 
     .clear-list { position:fixed; bottom:20px; right:20px; background:var(--danger); color:#fff; border:none; border-radius:999px; padding:10px 16px; font-size:.85rem; font-weight:500; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.15); transition:background .2s; }
     .clear-list:hover { background:#dc2626; }
+    /* --- Collapsible sections --- */
+  details.section {
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius);
+    background: #fff;
+    margin: 12px 0 16px;
+    overflow: hidden;
+  }
+  details.section > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 14px;
+    background: #eef2ff;
+    font-weight: 600;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  details.section > summary::-webkit-details-marker { display: none; }
+  .section__chev { font-weight: 700; width: 1.1em; text-align: center; }
+  details.section[open] > summary { background: #eaefff; }
+
+  /* inner content wrapper */
+  .section__body { padding: 14px; background: #fff; }
+
+  /* --- Meals row -> single line, horizontal scroll --- */
+  .meal-row {
+    display: flex;
+    gap: 10px;
+    margin: 0;              /* tighter */
+    overflow-x: auto;
+    padding-bottom: 6px;
+    flex-wrap: nowrap;      /* one row */
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .meal-row button { scroll-snap-align: start; }
+
+  /* Optional: slimmer scrollbar */
+  .meal-row::-webkit-scrollbar { height: 6px; }
+  .meal-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+
+  /* --- Compact mode: smaller paddings & font sizes --- */
+  body.dense .meal-row button { padding: 8px 12px; font-size: .9rem; }
+  body.dense .weekly-group__content button { padding: 4px 10px; font-size: .8rem; }
+  body.dense .shopping-list li { padding: 4px 8px; }
+  body.dense .section-header { margin-top: 10px; font-size: 1rem; }
+  body.dense .custom-input { margin-top: 12px; }
+  body.dense .custom-input input { padding: 6px 10px; font-size: .85rem; }
+  body.dense .custom-input button { padding: 6px 10px; font-size: .85rem; }
+
+  /* Compact toggle button */
+  .compact-toggle {
+    position: absolute; top: 16px; right: 16px;
+    background: #e2e8f0; border: none; border-radius: 999px;
+    padding: 6px 10px; font-size: .8rem; color: #0f172a; cursor: pointer;
+  }
+  .compact-toggle:hover { background: #cbd5e1; }
+
+  /* Counter closer to sections */
+  .counter { margin: 10px 0 8px; }
+
   </style>
 </head>
 <body>
   <div class="app">
     <h1>Weekboodschappen</h1>
 
-    <h2 class="section-label">🍲 Maaltijden</h2>
-    <div class="meal-row" id="mealRow"></div>
+    <button id="compactBtn" class="compact-toggle" title="Compacte modus">Compact</button>
 
-    <h2 class="section-label">📦 Weekboodschappen</h2>
-    <div id="weeklyAccordion" class="weekly-accordion"></div>
+    <details id="sec-meals" class="section" open>
+      <summary><span class="section__chev">▼</span> 🍲 Maaltijden</summary>
+      <div class="section__body">
+        <div class="meal-row" id="mealRow"></div>
+      </div>
+    </details>
+
+    <details id="sec-weeklies" class="section" open>
+      <summary><span class="section__chev">▼</span> 📦 Weekboodschappen</summary>
+      <div class="section__body">
+        <div id="weeklyAccordion" class="weekly-accordion"></div>
+      </div>
+    </details>
 
     <div class="counter" id="mealCounter">Je hebt maaltijden geselecteerd voor 0 dagen</div>
     <ul class="shopping-list" id="shoppingList"></ul>
@@ -78,8 +151,6 @@
 
     <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
   </div>
-
-  <!-- ✅ Your app code (unchanged logic, now runs against a single compat SDK load) -->
   <script>
   /* ---------- Firebase init ---------- */
   const firebaseConfig = {
@@ -420,6 +491,48 @@
     cloudAddItem(value, sec, "Eigen");
     input.value = "";
   }
+
+  // Persist open/closed state of the two top sections
+  const mealsDetails = document.getElementById('sec-meals');
+  const weekliesDetails = document.getElementById('sec-weeklies');
+
+  // Default: close weeklies on small screens
+  if (localStorage.getItem('sec-weeklies-open') === null && window.innerWidth < 768) {
+    weekliesDetails.removeAttribute('open');
+  }
+
+  // restore saved state if present
+  const s1 = localStorage.getItem('sec-meals-open');
+  if (s1 !== null) mealsDetails.toggleAttribute('open', s1 === 'true');
+  const s2 = localStorage.getItem('sec-weeklies-open');
+  if (s2 !== null) weekliesDetails.toggleAttribute('open', s2 === 'true');
+
+  // update chevrons + save on toggle
+  function wireDetails(detailsEl) {
+    const summary = detailsEl.querySelector('summary .section__chev');
+    const update = () => { if (summary) summary.textContent = detailsEl.open ? '▼' : '►'; };
+    update();
+    detailsEl.addEventListener('toggle', () => {
+      update();
+      const key = detailsEl.id + '-open';
+      localStorage.setItem(key, String(detailsEl.open));
+    });
+  }
+  wireDetails(mealsDetails);
+  wireDetails(weekliesDetails);
+
+  // Compact mode toggle
+  const compactBtn = document.getElementById('compactBtn');
+  const COMPACT_KEY = 'ui-compact';
+  if (localStorage.getItem(COMPACT_KEY) === 'true') document.body.classList.add('dense');
+  compactBtn.textContent = document.body.classList.contains('dense') ? 'Normaal' : 'Compact';
+
+  compactBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dense');
+    const enabled = document.body.classList.contains('dense');
+    localStorage.setItem(COMPACT_KEY, String(enabled));
+    compactBtn.textContent = enabled ? 'Normaal' : 'Compact';
+  });
 
   /* ---------- Clear list ---------- */
   document.getElementById("clearListBtn").addEventListener("click", async () => {
