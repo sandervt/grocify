@@ -16,173 +16,50 @@
       --muted: #64748b;
       --radius: 12px;
     }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      padding: 20px;
-    }
-    .app {
-      width: 100%;
-      max-width: 720px;
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-      padding: 20px;
-      position: relative;
-      z-index: 1;
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 1.5rem;
-      color: var(--primary);
-    }
-    .section-label {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 16px 0 8px;
-      color: var(--muted);
-    }
+    body { font-family: 'Inter', system-ui, sans-serif; margin:0; background:var(--bg); color:var(--text); display:flex; justify-content:center; padding:20px; }
+    .app { width:100%; max-width:720px; background:var(--card); border-radius:var(--radius); box-shadow:0 4px 16px rgba(0,0,0,0.08); padding:20px; position:relative; z-index:1; }
+    h1 { margin-top:0; font-size:1.5rem; color:var(--primary); }
+    .section-label { font-size:1rem; font-weight:600; margin:16px 0 8px; color:var(--muted); }
 
-    /* Meal buttons (bigger, rectangular) */
-    .meal-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .meal-row button {
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 18px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 500;
-      transition: background 0.2s;
-    }
-    .meal-row button:hover { background: var(--primary-hover); }
-    .meal-row button.active { background: var(--accent); }
+    /* Meals */
+    .meal-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    .meal-row button { background:var(--primary); color:#fff; border:none; border-radius:8px; padding:10px 18px; cursor:pointer; font-size:1rem; font-weight:500; transition:background .2s; }
+    .meal-row button:hover { background:var(--primary-hover); }
+    .meal-row button.active { background:var(--accent); }
 
-    /* Accordion container */
-    .weekly-accordion {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    /* Each group card */
-    .weekly-group {
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    /* Header bar */
-    .weekly-group__header {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 14px;
-      background: #eef2ff; /* subtle indigo */
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #0f172a;
-    }
-    .weekly-group__header.active { background: #eaefff; }
-    .weekly-group__title { display: flex; align-items: center; gap: 8px; }
-    .weekly-group__chev { font-weight: 700; width: 1.1em; text-align: center; }
-    .weekly-group__badge {
-      background: #e2e8f0;
-      border-radius: 999px;
-      padding: 2px 10px;
-      font-size: 0.75rem;
-      color: #0f172a;
-    }
-    /* Content area with item pills */
-    .weekly-group__content { display: none; padding: 12px; background: #ffffff; }
-    .weekly-group.open .weekly-group__content {
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
-    .weekly-group__content button {
-      background: #e2e8f0;
-      color: var(--text);
-      border: none;
-      border-radius: 999px;
-      padding: 6px 14px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: background 0.2s;
-    }
-    .weekly-group__content button:hover { background: #cbd5e1; }
-    .weekly-group__content button.active { background: var(--accent); color: white; }
+    /* Weeklies accordion */
+    .weekly-accordion { display:flex; flex-direction:column; gap:12px; }
+    .weekly-group { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:var(--radius); overflow:hidden; }
+    .weekly-group__header { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; background:#eef2ff; border:none; cursor:pointer; font-size:.95rem; font-weight:600; color:#0f172a; }
+    .weekly-group__header.active { background:#eaefff; }
+    .weekly-group__title { display:flex; align-items:center; gap:8px; }
+    .weekly-group__chev { font-weight:700; width:1.1em; text-align:center; }
+    .weekly-group__badge { background:#e2e8f0; border-radius:999px; padding:2px 10px; font-size:.75rem; color:#0f172a; }
+    .weekly-group__content { display:none; padding:12px; background:#fff; }
+    .weekly-group.open .weekly-group__content { display:flex; flex-wrap:wrap; gap:8px; }
+    .weekly-group__content button { background:#e2e8f0; color:var(--text); border:none; border-radius:999px; padding:6px 14px; cursor:pointer; font-size:.85rem; transition:background .2s; }
+    .weekly-group__content button:hover { background:#cbd5e1; }
+    .weekly-group__content button.active { background:var(--accent); color:#fff; }
 
-    .counter {
-      font-weight: 500;
-      margin: 16px 0 8px;
-      color: var(--muted);
-    }
+    .counter { font-weight:500; margin:16px 0 8px; color:var(--muted); }
 
     /* Shopping list */
-    .shopping-list { list-style: none; padding: 0; margin: 0; }
-    .section-header {
-      margin-top: 16px;
-      font-weight: 600;
-      color: var(--primary);
-      font-size: 1.1rem;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 4px;
-      cursor: default;
-    }
-    .shopping-list li {
-      padding: 6px 10px;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .shopping-list li:hover { background: #f1f5f9; }
-    .shopping-list small { color: var(--muted); font-size: 0.75rem; }
-    .shopping-list li.crossed { text-decoration: line-through; color: var(--muted); }
+    .shopping-list { list-style:none; padding:0; margin:0; }
+    .section-header { margin-top:16px; font-weight:600; color:var(--primary); font-size:1.1rem; border-bottom:1px solid #e2e8f0; padding-bottom:4px; cursor:default; }
+    .shopping-list li { padding:6px 10px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:background .2s; }
+    .shopping-list li:hover { background:#f1f5f9; }
+    .shopping-list small { color:var(--muted); font-size:.75rem; }
+    .shopping-list li.crossed { text-decoration:line-through; color:var(--muted); }
 
     /* Custom input */
-    .custom-input { display: flex; gap: 8px; margin-top: 20px; }
-    .custom-input input {
-      flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1;
-      border-radius: var(--radius); font-size: 0.9rem;
-    }
-    .custom-input button {
-      background: var(--primary); color: white; border: none;
-      border-radius: var(--radius); padding: 8px 14px; cursor: pointer; font-size: 0.9rem;
-    }
-    .custom-input button:hover { background: var(--primary-hover); }
+    .custom-input { display:flex; gap:8px; margin-top:20px; }
+    .custom-input input { flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:var(--radius); font-size:.9rem; }
+    .custom-input button { background:var(--primary); color:#fff; border:none; border-radius:var(--radius); padding:8px 14px; cursor:pointer; font-size:.9rem; }
+    .custom-input button:hover { background:var(--primary-hover); }
 
-    /* Floating clear button */
-    .clear-list {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--danger);
-      color: white;
-      border: none;
-      border-radius: 999px;
-      padding: 10px 16px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      transition: background 0.2s;
-    }
-    .clear-list:hover { background: #dc2626; }
+    /* Floating clear */
+    .clear-list { position:fixed; bottom:20px; right:20px; background:var(--danger); color:#fff; border:none; border-radius:999px; padding:10px 16px; font-size:.85rem; font-weight:500; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.15); transition:background .2s; }
+    .clear-list:hover { background:#dc2626; }
   </style>
 </head>
 <body>
@@ -198,74 +75,61 @@
     <div class="counter" id="mealCounter">Je hebt maaltijden geselecteerd voor 0 dagen</div>
     <ul class="shopping-list" id="shoppingList"></ul>
 
-    <!-- Custom input field -->
     <div class="custom-input">
       <input type="text" id="customItemInput" placeholder="Eigen item toevoegen..." />
-      <button onclick="addCustomItem()">Voeg toe</button>
+      <button id="customAddBtn">Voeg toe</button>
     </div>
 
-    <!-- Floating clear list -->
     <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
 <script>
-/* ---------- Sections in walking order ---------- */
+/* ---------- Firebase init (fill your config) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCZWsoDIQYwCF-V2QuvYjxrFGB84gRnHFo",
+  authDomain: "grocify-2fd51.firebaseapp.com",
+  projectId: "grocify-2fd51"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* One shared list for everyone */
+const HOUSEHOLD_ID = "shared";
+const itemsCol = db.collection('households').doc(HOUSEHOLD_ID).collection('listItems');
+
+/* Helpers */
+const inc    = firebase.firestore.FieldValue.increment;
+const arrAdd = firebase.firestore.FieldValue.arrayUnion;
+const arrDel = firebase.firestore.FieldValue.arrayRemove;
+function slug(name){ return name.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^\w-]/g,''); }
+
+/* ---------- Supermarket order ---------- */
 const sectionOrder = [
-  "Groente & Fruit",
-  "Vega",
-  "Brood",
-  "Ontbijt & Smeersels",
-  "Zuivel",
-  "Pasta & Rijst",
-  "Kruiden & Specerijen",
-  "Chips & Snacks",
-  "Non-food",        // before Diepvries
-  "Diepvries",
-  "Toiletartikelen", // last
-  "Eigen"
+  "Groente & Fruit","Vega","Brood","Ontbijt & Smeersels","Zuivel",
+  "Pasta & Rijst","Kruiden & Specerijen","Chips & Snacks","Non-food","Diepvries","Toiletartikelen","Eigen"
 ];
 
 /* ---------- Meals ---------- */
 const mealData = {
-  "Pizza": [
-    "Pizzadeeg","Gesneden Champignons","Paprika","Paprika",
-    "Rode Ui","Tapenade","Cashewnoten"
-  ],
-  "Sticky Tofu": [
-    "Tofu","Broccoli","Rijst azijn","Maizena","Sojasaus","Knoflook"
-  ],
-  "Stamppot Spinazie": [
-    "Burger","Kruimige Aardappelen","Spinazie fijn diepvries"
-  ],
-  "Pasta": [
-    "Paprika","Paprika","Gehakt","Winterpeen","Tomatenpuree",
-    "Cherry Tomaten blik","Saus zongedroogde tomaat","Ui wit","Knoflook"
-  ],
-  "Chili Sin Carne": [
-    "Ui wit","Knoflook","Koriander","Chilipoeder","Komijnzaad",
-    "Zoete Aardappels","Zoete Aardappels","Tomatenblokjes (400gr)",
-    "Bosui","Bosui","Crème Fraîche (125ml)","Avocado",
-    "Maïskorrels (100gr)","Kidneybonen (100gr)"
-  ],
-  "Couscous Boerenkool": [
-    "Ui wit","Knoflook","Chilipoeder","Boerenkool (300gr)",
-    "Couscous (200gr)","Rozijnen (50gr)","Kruidenbouillon (600ml)"
-  ]
+  "Pizza": ["Pizzadeeg","Gesneden Champignons","Paprika","Paprika","Rode Ui","Tapenade","Cashewnoten"],
+  "Sticky Tofu": ["Tofu","Broccoli","Rijst azijn","Maizena","Sojasaus","Knoflook"],
+  "Stamppot Spinazie": ["Burger","Kruimige Aardappelen","Spinazie fijn diepvries"],
+  "Pasta": ["Paprika","Paprika","Gehakt","Winterpeen","Tomatenpuree","Cherry Tomaten blik","Saus zongedroogde tomaat","Ui wit","Knoflook"],
+  "Chili Sin Carne": ["Ui wit","Knoflook","Koriander","Chilipoeder","Komijnzaad","Zoete Aardappels","Zoete Aardappels","Tomatenblokjes (400gr)","Bosui","Bosui","Crème Fraîche (125ml)","Avocado","Maïskorrels (100gr)","Kidneybonen (100gr)"],
+  "Couscous Boerenkool": ["Ui wit","Knoflook","Chilipoeder","Boerenkool (300gr)","Couscous (200gr)","Rozijnen (50gr)","Kruidenbouillon (600ml)"]
 };
 
 /* ---------- Weeklies (accordion groups) ---------- */
 const weeklyGroupsData = {
-  "Ontbijt & Lunch": [
-    "Brood","Pindakaas","Hagelslag","Sojayoghurt",
-    "Havermout","Havermelk","Cruesli","Hummus","Rozijnen (50gr)"
-  ],
-  "Toiletartikelen": [
-    "Toiletpapier","Zeep","Wasmiddel","Shampoo",
-    "Tandpasta","Afwasmiddel","Keukenpapier"
-  ],
-  "Vers": [
-    "Blauwe Bessen","Bananen","Avocado","Avocado","Avocado","Avocado"
-  ],
+  "Ontbijt & Lunch": ["Brood","Pindakaas","Hagelslag","Sojayoghurt","Havermout","Havermelk","Cruesli","Hummus","Rozijnen (50gr)"],
+  "Toiletartikelen": ["Toiletpapier","Zeep","Wasmiddel","Shampoo","Tandpasta","Afwasmiddel","Keukenpapier"],
+  "Vers": ["Blauwe Bessen","Bananen","Avocado","Avocado","Avocado","Avocado"],
   "Meisjes": ["Groenvoer","Hooi","Brokjes"],
   "Baby": ["Luiers","Babydoekjes","Kunstvoeding"],
   "Appelschilletjes": ["Chocola","Chips","Big Hit","Drop","Apekoppen"]
@@ -273,93 +137,133 @@ const weeklyGroupsData = {
 
 /* ---------- Mapping: item → section ---------- */
 const itemToSection = {
-  /* Groente & Fruit */
-  "Paprika": "Groente & Fruit","Rode Ui": "Groente & Fruit","Ui wit": "Groente & Fruit",
-  "Knoflook": "Groente & Fruit","Broccoli": "Groente & Fruit","Zoete Aardappels": "Groente & Fruit",
-  "Gesneden Champignons": "Groente & Fruit","Bosui": "Groente & Fruit",
-  "Avocado": "Groente & Fruit","Blauwe Bessen": "Groente & Fruit","Bananen": "Groente & Fruit",
-  "Winterpeen": "Groente & Fruit","Boerenkool (300gr)": "Groente & Fruit", "Groenvoer": "Groente & Fruit",
+  // Groente & Fruit
+  "Paprika":"Groente & Fruit","Rode Ui":"Groente & Fruit","Ui wit":"Groente & Fruit",
+  "Knoflook":"Groente & Fruit","Broccoli":"Groente & Fruit","Zoete Aardappels":"Groente & Fruit",
+  "Gesneden Champignons":"Groente & Fruit","Bosui":"Groente & Fruit","Avocado":"Groente & Fruit",
+  "Blauwe Bessen":"Groente & Fruit","Bananen":"Groente & Fruit","Winterpeen":"Groente & Fruit",
+  "Boerenkool (300gr)":"Groente & Fruit","Groenvoer":"Groente & Fruit",
 
-  /* Vega */
-  "Tofu": "Vega","Burger": "Vega","Gehakt": "Vega",
+  // Vega
+  "Tofu":"Vega","Burger":"Vega","Gehakt":"Vega",
 
-  /* Brood */
-  "Brood": "Brood","Pizzadeeg": "Brood",
+  // Brood
+  "Brood":"Brood","Pizzadeeg":"Brood",
 
-  /* Ontbijt & Smeersels */
-  "Pindakaas": "Ontbijt & Smeersels","Hagelslag": "Ontbijt & Smeersels","Sojayoghurt": "Ontbijt & Smeersels",
-  "Havermout": "Ontbijt & Smeersels","Havermelk": "Ontbijt & Smeersels","Cruesli": "Ontbijt & Smeersels",
-  "Tapenade": "Ontbijt & Smeersels","Hummus": "Ontbijt & Smeersels","Rozijnen (50gr)": "Ontbijt & Smeersels",
+  // Ontbijt & Smeersels
+  "Pindakaas":"Ontbijt & Smeersels","Hagelslag":"Ontbijt & Smeersels","Sojayoghurt":"Ontbijt & Smeersels",
+  "Havermout":"Ontbijt & Smeersels","Havermelk":"Ontbijt & Smeersels","Cruesli":"Ontbijt & Smeersels",
+  "Tapenade":"Ontbijt & Smeersels","Hummus":"Ontbijt & Smeersels","Rozijnen (50gr)":"Ontbijt & Smeersels",
 
-  /* Zuivel */
-  "Crème Fraîche (125ml)": "Zuivel",
+  // Zuivel
+  "Crème Fraîche (125ml)":"Zuivel",
 
-  /* Pasta & Rijst */
-  "Rijst azijn": "Pasta & Rijst","Maizena": "Pasta & Rijst","Sojasaus": "Pasta & Rijst",
-  "Tomatenpuree": "Pasta & Rijst","Saus zongedroogde tomaat": "Pasta & Rijst",
-  "Cherry Tomaten blik": "Pasta & Rijst","Tomatenblokjes (400gr)": "Pasta & Rijst",
-  "Couscous (200gr)": "Pasta & Rijst","Kruidenbouillon (600ml)": "Pasta & Rijst",
+  // Pasta & Rijst
+  "Rijst azijn":"Pasta & Rijst","Maizena":"Pasta & Rijst","Sojasaus":"Pasta & Rijst",
+  "Tomatenpuree":"Pasta & Rijst","Saus zongedroogde tomaat":"Pasta & Rijst","Cherry Tomaten blik":"Pasta & Rijst",
+  "Tomatenblokjes (400gr)":"Pasta & Rijst","Couscous (200gr)":"Pasta & Rijst","Kruidenbouillon (600ml)":"Pasta & Rijst",
 
-  /* Kruiden & Specerijen */
-  "Chilipoeder": "Kruiden & Specerijen","Komijnzaad": "Kruiden & Specerijen","Koriander": "Kruiden & Specerijen",
+  // Kruiden & Specerijen
+  "Chilipoeder":"Kruiden & Specerijen","Komijnzaad":"Kruiden & Specerijen","Koriander":"Kruiden & Specerijen",
 
-  /* Chips & Snacks */
-  "Cashewnoten": "Chips & Snacks","Chocola": "Chips & Snacks","Chips": "Chips & Snacks",
-  "Big Hit": "Chips & Snacks","Drop": "Chips & Snacks","Apekoppen": "Chips & Snacks",
+  // Chips & Snacks
+  "Cashewnoten":"Chips & Snacks","Chocola":"Chips & Snacks","Chips":"Chips & Snacks","Big Hit":"Chips & Snacks","Drop":"Chips & Snacks","Apekoppen":"Chips & Snacks",
 
-  /* Non-food */
-  "Hooi": "Non-food","Brokjes": "Non-food","Luiers": "Non-food",
-  "Babydoekjes": "Non-food","Kunstvoeding": "Non-food",
+  // Non-food
+  "Hooi":"Non-food","Brokjes":"Non-food","Luiers":"Non-food","Babydoekjes":"Non-food","Kunstvoeding":"Non-food",
 
-  /* Diepvries */
-  "Spinazie fijn diepvries": "Diepvries",
+  // Diepvries
+  "Spinazie fijn diepvries":"Diepvries",
 
-  /* Toiletartikelen */
-  "Toiletpapier": "Toiletartikelen","Zeep": "Toiletartikelen","Wasmiddel": "Toiletartikelen",
-  "Shampoo": "Toiletartikelen","Tandpasta": "Toiletartikelen","Afwasmiddel": "Toiletartikelen","Keukenpapier": "Toiletartikelen"
+  // Toiletartikelen
+  "Toiletpapier":"Toiletartikelen","Zeep":"Toiletartikelen","Wasmiddel":"Toiletartikelen",
+  "Shampoo":"Toiletartikelen","Tandpasta":"Toiletartikelen","Afwasmiddel":"Toiletartikelen","Keukenpapier":"Toiletartikelen"
 };
 
-/* ---------- State ---------- */
-let activeMeals = new Set();
-let activeItems = {};
+/* ---------- Local (derived from cloud) ---------- */
+let activeMeals = new Set();  // only for the counter
+let activeItems = {};         // { name: { count, sources:Set, checked } }
+
+/* ---------- Auth + realtime ---------- */
+auth.signInAnonymously().catch(console.error);
+auth.onAuthStateChanged(async () => {
+  try { await db.enablePersistence(); } catch(e) { /* ok if not supported */ }
+  itemsCol.onSnapshot(snap => {
+    const docs = snap.docs.map(d => d.data());
+    setActiveFromCloud(docs);
+  });
+});
+
+/* ---------- Cloud writes ---------- */
+async function cloudAddItem(name, section, origin){
+  const id = slug(name);
+  await itemsCol.doc(id).set({
+    name, section,
+    count: inc(1),
+    origins: arrAdd(origin),
+    checked: false,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true });
+}
+async function cloudRemoveItem(name, origin){
+  const id = slug(name);
+  await db.runTransaction(async tx => {
+    const ref = itemsCol.doc(id);
+    const snap = await tx.get(ref);
+    if(!snap.exists) return;
+    const data = snap.data();
+    const newCount = (data.count || 0) - 1;
+    if(newCount <= 0) tx.delete(ref);
+    else tx.update(ref, { count: newCount, origins: arrDel(origin) });
+  });
+}
+async function cloudToggleChecked(name, checked){
+  await itemsCol.doc(slug(name)).set({ checked }, { merge:true });
+}
+async function cloudClearList(){
+  const snap = await itemsCol.get();
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+}
 
 /* ---------- Meals UI ---------- */
-function renderMeals() {
-  const mealRow = document.getElementById("mealRow");
-  mealRow.innerHTML = "";
-  for (let meal in mealData) {
+function renderMeals(){
+  const row = document.getElementById("mealRow");
+  row.innerHTML = "";
+  for(const meal in mealData){
     const btn = document.createElement("button");
     btn.textContent = meal;
-    btn.onclick = () => toggleMeal(meal, btn);
-    mealRow.appendChild(btn);
+    btn.onclick = async () => {
+      const isActive = btn.classList.toggle("active");
+      if(isActive){
+        activeMeals.add(meal);
+        for(const item of mealData[meal]){
+          const sec = itemToSection[item] || "Eigen";
+          cloudAddItem(item, sec, meal);
+        }
+      }else{
+        activeMeals.delete(meal);
+        for(const item of mealData[meal]){
+          cloudRemoveItem(item, meal);
+        }
+      }
+      updateCounter();
+    };
+    row.appendChild(btn);
   }
-}
-function toggleMeal(meal, btn) {
-  if (activeMeals.has(meal)) {
-    activeMeals.delete(meal);
-    btn.classList.remove("active");
-    mealData[meal].forEach(i => removeItem(i));
-  } else {
-    activeMeals.add(meal);
-    btn.classList.add("active");
-    mealData[meal].forEach(i => addItem(i, meal));
-  }
-  updateCounter();
-  renderList();
 }
 
 /* ---------- Weeklies Accordion UI ---------- */
-function renderWeeklies() {
+function renderWeeklies(){
   const container = document.getElementById("weeklyAccordion");
   container.innerHTML = "";
 
   Object.keys(weeklyGroupsData).forEach(group => {
-    // Card
     const card = document.createElement("div");
     card.className = "weekly-group";
     card.dataset.group = group;
 
-    // Header
     const header = document.createElement("button");
     header.className = "weekly-group__header";
     header.onclick = () => toggleWeeklyGroupAccordion(group);
@@ -382,7 +286,6 @@ function renderWeeklies() {
 
     header.append(titleWrap, badge);
 
-    // Content
     const content = document.createElement("div");
     content.className = "weekly-group__content";
     content.id = `group-${group}`;
@@ -390,105 +293,120 @@ function renderWeeklies() {
     weeklyGroupsData[group].forEach(item => {
       const b = document.createElement("button");
       b.textContent = item;
+      b.dataset.item = item;
       b.onclick = () => {
-        b.classList.toggle("active");
-        if (b.classList.contains("active")) addItem(item, group);
-        else removeItem(item);
+        const active = b.classList.toggle("active");
+        if(active){
+          const sec = itemToSection[item] || "Eigen";
+          cloudAddItem(item, sec, group);
+        }else{
+          cloudRemoveItem(item, group);
+        }
         updateWeeklyBadge(group);
-        renderList();
       };
       content.appendChild(b);
     });
 
     card.append(header, content);
     container.appendChild(card);
-
-    // Init badge
     updateWeeklyBadge(group);
   });
+
+  // reflect current cloud selections in buttons after first load
+  syncWeeklySelectionsFromCloud();
 }
 
-function toggleWeeklyGroupAccordion(groupName) {
-  const container = document.getElementById("weeklyAccordion");
-  const cards = container.querySelectorAll(".weekly-group");
-
+function toggleWeeklyGroupAccordion(groupName){
+  const cards = document.querySelectorAll(".weekly-group");
   cards.forEach(card => {
     const header = card.querySelector(".weekly-group__header");
     const chev = card.querySelector(".weekly-group__chev");
     const isTarget = card.dataset.group === groupName;
-
-    if (isTarget) {
+    if(isTarget){
       const willOpen = !card.classList.contains("open");
       card.classList.toggle("open", willOpen);
       chev.textContent = willOpen ? "▼" : "►";
       header.classList.toggle("active", willOpen);
-      if (willOpen) card.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
+      if(willOpen) card.scrollIntoView({ behavior:"smooth", block:"start" });
+    }else{
       card.classList.remove("open");
       header.classList.remove("active");
       const otherChev = card.querySelector(".weekly-group__chev");
-      if (otherChev) otherChev.textContent = "►";
+      if(otherChev) otherChev.textContent = "►";
     }
   });
 }
 
-function updateWeeklyBadge(groupName) {
+function updateWeeklyBadge(groupName){
+  const count = Object.entries(activeItems)
+    .filter(([_, data]) => data.sources.has(groupName))
+    .length;
   const card = document.querySelector(`.weekly-group[data-group="${CSS.escape(groupName)}"]`);
-  if (!card) return;
-  const content = card.querySelector(".weekly-group__content");
+  if(!card) return;
   const badge = card.querySelector(".weekly-group__badge");
-  const count = content.querySelectorAll("button.active").length;
   badge.textContent = count === 1 ? "1 geselecteerd" : `${count} geselecteerd`;
 }
-
-/* ---------- Items ops ---------- */
-function addItem(item, source) {
-  if (!activeItems[item]) {
-    activeItems[item] = { count: 1, sources: new Set([source]) };
-  } else {
-    activeItems[item].count++;
-    activeItems[item].sources.add(source);
-  }
+function updateAllWeeklyBadges(){
+  Object.keys(weeklyGroupsData).forEach(updateWeeklyBadge);
 }
-function removeItem(item) {
-  if (activeItems[item]) {
-    activeItems[item].count--;
-    if (activeItems[item].count <= 0) delete activeItems[item];
-  }
+function syncWeeklySelectionsFromCloud(){
+  Object.keys(weeklyGroupsData).forEach(group => {
+    const content = document.getElementById(`group-${group}`);
+    if(!content) return;
+    content.querySelectorAll("button").forEach(btn => {
+      const item = btn.dataset.item;
+      const cloud = activeItems[item];
+      const shouldBeActive = !!(cloud && cloud.sources.has(group));
+      btn.classList.toggle("active", shouldBeActive);
+    });
+    updateWeeklyBadge(group);
+  });
 }
 
 /* ---------- Shopping list ---------- */
-function updateCounter() {
+function updateCounter(){
   document.getElementById("mealCounter").textContent =
     "Je hebt maaltijden geselecteerd voor " + activeMeals.size + " dagen";
 }
-function renderList() {
+function setActiveFromCloud(cloudDocs){
+  activeItems = {};
+  cloudDocs.forEach(d => {
+    activeItems[d.name] = {
+      count: d.count || 1,
+      sources: new Set(d.origins || []),
+      checked: !!d.checked
+    };
+  });
+  renderList();
+  syncWeeklySelectionsFromCloud();
+  updateAllWeeklyBadges();
+}
+function renderList(){
   const ul = document.getElementById("shoppingList");
   ul.innerHTML = "";
 
   sectionOrder.forEach(section => {
     const items = Object.keys(activeItems).filter(i => (itemToSection[i] || "Eigen") === section);
-    if (items.length > 0) {
+    if(items.length > 0){
       const header = document.createElement("li");
       header.className = "section-header";
       header.textContent = section;
       ul.appendChild(header);
 
-      items.forEach(item => {
+      items.forEach(name => {
+        const data = activeItems[name];
         const li = document.createElement("li");
-        let label = item;
-        if (activeItems[item].count > 1) label += " (" + activeItems[item].count + "x)";
+        const label = data.count > 1 ? `${name} (${data.count}x)` : name;
 
         const span = document.createElement("span");
         span.textContent = label;
 
         const small = document.createElement("small");
-        small.textContent = Array.from(activeItems[item].sources).join(", ");
+        small.textContent = Array.from(data.sources).join(", ");
 
         li.append(span, small);
-
-        // cross off on click
-        li.onclick = () => { li.classList.toggle("crossed"); };
+        li.classList.toggle("crossed", !!data.checked);
+        li.onclick = () => cloudToggleChecked(name, !li.classList.contains("crossed"));
 
         ul.appendChild(li);
       });
@@ -497,44 +415,37 @@ function renderList() {
 }
 
 /* ---------- Custom input ---------- */
-function addCustomItem() {
+document.getElementById("customAddBtn").addEventListener("click", addCustomItem);
+document.getElementById("customItemInput").addEventListener("keydown", e => {
+  if(e.key === "Enter"){ e.preventDefault(); addCustomItem(); }
+});
+function addCustomItem(){
   const input = document.getElementById("customItemInput");
   const value = input.value.trim();
-  if (!value) return;
-  addItem(value, "Eigen");
-  renderList();
+  if(!value) return;
+  const sec = itemToSection[value] || "Eigen";
+  cloudAddItem(value, sec, "Eigen");
   input.value = "";
 }
-document.getElementById("customItemInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    addCustomItem();
-  }
-});
 
 /* ---------- Clear list ---------- */
-document.getElementById("clearListBtn").addEventListener("click", () => {
+document.getElementById("clearListBtn").addEventListener("click", async () => {
+  await cloudClearList();
   activeMeals = new Set();
-  activeItems = {};
-  // reset meals
   document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
-  // reset weekly items
   document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
-  // close all groups, reset chevrons & badges
   document.querySelectorAll(".weekly-group").forEach(card => {
     card.classList.remove("open");
     card.querySelector(".weekly-group__header").classList.remove("active");
     card.querySelector(".weekly-group__chev").textContent = "►";
-    updateWeeklyBadge(card.dataset.group);
   });
   updateCounter();
-  renderList();
 });
 
 /* ---------- Init ---------- */
 renderMeals();
 renderWeeklies();
-renderList();
+updateCounter();
 </script>
 </body>
 </html>
