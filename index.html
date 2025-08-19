@@ -153,6 +153,40 @@
   /* Make space so the tabbar doesn't overlap content or floating buttons */
   .app { padding-bottom: 110px; }
 
+  /* --- Recipes tab --- */
+  .recipes-toolbar {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 16px;
+  }
+  .recipes-grid {
+    display:grid; gap:12px; padding:0 16px 16px;
+  }
+  .recipe-card {
+    border:1px solid #e2e8f0; border-radius:12px; background:#fff; padding:12px;
+    display:grid; gap:8px;
+  }
+  .recipe-card header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .recipe-card .tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .recipe-card .tags span { background:#eef2ff; border-radius:999px; padding:2px 8px; font-size:.75rem; color:#0f172a; }
+  .recipe-card .actions { display:flex; gap:8px; justify-content:flex-end; }
+  .btn { border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:.9rem; }
+  .btn.primary { background:var(--primary); color:#fff; }
+  .btn.ghost { background:#e2e8f0; color:#0f172a; }
+  .btn.danger { background:var(--danger); color:#fff; }
+
+  /* Recipe editor dialog */
+  #recipeDialog { border:none; border-radius:12px; padding:16px; width:90%; max-width:520px; }
+  .recipe-form { display:grid; gap:10px; }
+  .recipe-form input, .recipe-form textarea {
+    width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font-size:.95rem;
+  }
+  .ing-suggestions { display:grid; gap:6px; max-height:180px; overflow:auto; }
+  .ing-suggestions button {
+    text-align:left; border:1px solid #e2e8f0; background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer;
+  }
+  .ing-suggestions button:hover { background:#f8fafc; }
+  .recipe-dialog-actions { display:flex; gap:8px; justify-content:flex-end; }
+
   /* --- Bottom tab bar --- */
   .tabbar {
     position: fixed; left: 0; right: 0; bottom: 0;
@@ -221,11 +255,28 @@
 
   <!-- TAB: RECIPES (placeholder for M3) -->
   <section id="tab-recipes" class="tabpage">
-    <div class="section__body" style="padding:16px">
-      <h2 style="margin:0 0 8px;">🍳 Recepten</h2>
-      <p style="color:#64748b; margin:0;">Hier komt je receptenbeheer (M3). Voor nu: geen logica gewijzigd.</p>
+    <div class="recipes-toolbar">
+      <h2 style="margin:0;">🍳 Recepten</h2>
+      <button id="newRecipeBtn" class="btn primary">Nieuw recept</button>
     </div>
+    <div id="recipesList" class="recipes-grid"></div>
   </section>
+  
+  <!-- Recipe editor dialog -->
+  <dialog id="recipeDialog">
+    <form method="dialog" id="recipeForm" class="recipe-form">
+      <h3 style="margin:0;">Recept</h3>
+      <input id="recipeNameInput" type="text" placeholder="Receptnaam (bijv. Pasta Arrabiata)" />
+      <textarea id="recipeItemsInput" rows="5" placeholder="Ingrediënten (gescheiden door komma of nieuwe regel)"></textarea>
+      <div class="ing-suggestions" id="ingSuggestions"></div>
+      <div class="recipe-dialog-actions">
+        <button type="button" id="recipeDeleteBtn" class="btn danger" style="margin-right:auto; display:none;">Verwijderen</button>
+        <button value="cancel" type="button" id="recipeCancelBtn" class="btn ghost">Annuleren</button>
+        <button value="ok" id="recipeSaveBtn" class="btn primary">Opslaan</button>
+      </div>
+    </form>
+  </dialog>
+  
 
   <!-- TAB: STORES (placeholder for M4) -->
   <section id="tab-stores" class="tabpage">
@@ -781,6 +832,187 @@ const compactBtn = document.getElementById('compactBtn');
     syncFromHash();
   })();
 
+/* ---------- Recipes (M3) ---------- */
+// Collection
+const recipesCol = db.collection('households').doc(HOUSEHOLD_ID).collection('recipes');
+
+// Live list
+recipesCol.orderBy('name').onSnapshot(snap => {
+  const recipes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderRecipes(recipes);
+}, err => console.error("recipes onSnapshot error", err));
+
+// Elements
+const recipesListEl     = document.getElementById('recipesList');
+const newRecipeBtn      = document.getElementById('newRecipeBtn');
+const recipeDialog      = document.getElementById('recipeDialog');
+const recipeNameInput   = document.getElementById('recipeNameInput');
+const recipeItemsInput  = document.getElementById('recipeItemsInput');
+const recipeSaveBtn     = document.getElementById('recipeSaveBtn');
+const recipeCancelBtn   = document.getElementById('recipeCancelBtn');
+const recipeDeleteBtn   = document.getElementById('recipeDeleteBtn');
+const ingSuggestionsBox = document.getElementById('ingSuggestions');
+
+let editingRecipeId = null; // null = new
+
+function renderRecipes(recipes){
+  recipesListEl.innerHTML = "";
+  if(!recipes.length){
+    const p = document.createElement('p');
+    p.style.color = '#64748b';
+    p.style.padding = '0 16px 16px';
+    p.textContent = "Nog geen recepten. Voeg je eerste recept toe.";
+    recipesListEl.appendChild(p);
+    return;
+  }
+
+  recipes.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+
+    const header = document.createElement('header');
+    const title  = document.createElement('strong');
+    title.textContent = r.name || "Zonder naam";
+    const count  = document.createElement('small');
+    count.textContent = `${(r.items||[]).length} items`;
+    header.append(title, count);
+
+    const tags = document.createElement('div');
+    tags.className = 'tags';
+    (r.items||[]).slice(0, 14).forEach(i => {
+      const t = document.createElement('span');
+      t.textContent = i;
+      tags.appendChild(t);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn primary';
+    addBtn.textContent = 'Voeg toe aan lijst';
+    addBtn.onclick = async () => {
+      for(const item of (r.items || [])){
+        const sec = inferSection(item);
+        await cloudAddItem(item, sec, r.name || 'Recept');
+      }
+    };
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn ghost';
+    editBtn.textContent = 'Bewerken';
+    editBtn.onclick = () => openRecipeDialog(r);
+
+    actions.append(addBtn, editBtn);
+    card.append(header, tags, actions);
+    recipesListEl.appendChild(card);
+  });
+}
+
+// New recipe
+newRecipeBtn.addEventListener('click', () => openRecipeDialog(null));
+
+// Dialog open/close
+function openRecipeDialog(recipe){
+  editingRecipeId = recipe ? recipe.id : null;
+  recipeNameInput.value  = recipe ? (recipe.name || '') : '';
+  recipeItemsInput.value = recipe ? (recipe.items || []).join('\n') : '';
+  recipeDeleteBtn.style.display = recipe ? 'inline-block' : 'none';
+  ingSuggestionsBox.innerHTML = "";
+  recipeDialog.showModal();
+  setTimeout(() => recipeNameInput.focus(), 0);
+}
+
+recipeCancelBtn.addEventListener('click', () => recipeDialog.close());
+
+// Delete
+recipeDeleteBtn.addEventListener('click', async () => {
+  if(!editingRecipeId) return;
+  const name = recipeNameInput.value || 'recept';
+  if(confirm(`Verwijder "${name}"?`)){
+    await recipesCol.doc(editingRecipeId).delete();
+    recipeDialog.close();
+  }
+});
+
+// Save (create/update)
+recipeSaveBtn.addEventListener('click', async (e) => {
+  e.preventDefault();
+
+  const name = recipeNameInput.value.trim();
+  const items = parseItems(recipeItemsInput.value);
+
+  if(!name){ alert("Geef een naam."); return; }
+  if(items.length === 0){ alert("Voeg minimaal één ingrediënt toe."); return; }
+
+  const payload = {
+    name,
+    items,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    ...(editingRecipeId ? {} : { createdAt: firebase.firestore.FieldValue.serverTimestamp() }),
+  };
+
+  try {
+    if(editingRecipeId){
+      await recipesCol.doc(editingRecipeId).set(payload, { merge:true });
+    } else {
+      const id = slug(name) || ("r-" + Date.now());
+      await recipesCol.doc(id).set(payload, { merge:true });
+      editingRecipeId = id;
+    }
+    recipeDialog.close();
+  } catch (err) {
+    console.error("save recipe failed", err);
+    alert("Opslaan mislukt: " + err.message);
+  }
+});
+
+// Helpers
+function parseItems(raw){
+  return Array.from(new Set(
+    (raw || "")
+      .split(/[\n,]+/)
+      .map(s => s.trim())
+      .filter(Boolean)
+  ));
+}
+
+    // --- Autosuggest for ingredients (basic): suggest last token ---
+    recipeItemsInput.addEventListener('input', () => {
+      const { token, start, end } = getLastToken(recipeItemsInput.value);
+      ingSuggestionsBox.innerHTML = "";
+      if(!token) return;
+
+      // pool: known items minus already listed
+      const existing = new Set(parseItems(recipeItemsInput.value));
+      const matches = suggestMatches(token, KNOWN_ITEMS.filter(x => !existing.has(x)), 8);
+      matches.forEach(name => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name + ' · ' + inferSection(name);
+        b.onclick = () => {
+          // replace last token with the clicked suggestion
+          const before = recipeItemsInput.value.slice(0, start);
+          const after  = recipeItemsInput.value.slice(end);
+          const sep = before && !/[\n,]$/.test(before) ? '' : ''; // keep separators from original
+          const inserted = name;
+          // If we're mid-line and not at end, ensure we keep separators
+          const joiner = after && !/^[\n,]/.test(after) ? '' : '';
+          recipeItemsInput.value = before + sep + inserted + joiner + after;
+          recipeItemsInput.dispatchEvent(new Event('input')); // refresh suggestions
+          recipeItemsInput.focus();
+        };
+        ingSuggestionsBox.appendChild(b);
+      });
+    });
+
+    function getLastToken(text){
+      const i = Math.max(text.lastIndexOf('\n'), text.lastIndexOf(','));
+      const start = i === -1 ? 0 : i + 1;
+      const end   = text.length;
+      const token = text.slice(start, end).trim();
+      return { token, start, end };
+    }
   /* ---------- Init ---------- */
   renderMeals();
   renderWeeklies();
