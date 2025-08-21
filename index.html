@@ -1,1327 +1,2008 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="data:,">
-  <title>Weekboodschappen</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Weekboodschappen</title>
 
-  <!-- ✅ Single set of Firebase compat SDKs (v10) -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
-  <!-- If you enforced App Check in the console, uncomment: -->
-  <!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
+    <!-- ✅ Single set of Firebase compat SDKs (v10) -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+    <!-- If you enforced App Check in the console, uncomment: -->
+    <!-- <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check-compat.js"></script> -->
 
-  <style>
-    :root {
-      --bg: #f1f5f9; --card: #ffffff; --primary: #0f766e; --primary-hover: #14b8a6;
-      --accent: #7c3aed; --danger: #ef4444; --text: #0f172a; --muted: #64748b; --radius: 12px;
-    }
-    body { font-family: 'Inter', system-ui, sans-serif; margin:0; background:var(--bg); color:var(--text); display:flex; justify-content:center; padding:20px; }
-    .app { width:100%; max-width:720px; background:var(--card); border-radius:var(--radius); box-shadow:0 4px 16px rgba(0,0,0,0.08); padding:20px; position:relative; z-index:1; }
-    h1 { margin-top:0; font-size:1.5rem; color:var(--primary); }
-    .section-label { font-size:1rem; font-weight:600; margin:16px 0 8px; color:var(--muted); }
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --primary: #0f766e;
+            --primary-hover: #14b8a6;
+            --accent: #7c3aed;
+            --danger: #ef4444;
+            --text: #0f172a;
+            --muted: #64748b;
+            --radius: 12px;
+        }
+        body {
+            font-family: "Inter", system-ui, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .app {
+            width: 100%;
+            max-width: 720px;
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        .section-label {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            color: var(--muted);
+        }
 
-    .meal-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
-    .meal-row button { background:var(--primary); color:#fff; border:none; border-radius:8px; padding:10px 18px; cursor:pointer; font-size:1rem; font-weight:500; transition:background .2s; }
-    .meal-row button:hover { background:var(--primary-hover); }
-    .meal-row button.active { background:var(--accent); }
+        .meal-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .meal-row button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .meal-row button:hover {
+            background: var(--primary-hover);
+        }
+        .meal-row button.active {
+            background: var(--accent);
+        }
 
-    .weekly-accordion { display:flex; flex-direction:column; gap:12px; }
-    .weekly-group { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:var(--radius); overflow:hidden; }
-    .weekly-group__header { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; background:#eef2ff; border:none; cursor:pointer; font-size:.95rem; font-weight:600; color:#0f172a; }
-    .weekly-group__header.active { background:#eaefff; }
-    .weekly-group__title { display:flex; align-items:center; gap:8px; }
-    .weekly-group__chev { font-weight:700; width:1.1em; text-align:center; }
-    .weekly-group__badge { background:#e2e8f0; border-radius:999px; padding:2px 10px; font-size:.75rem; color:#0f172a; }
-    .weekly-group__content { display:none; padding:12px; background:#fff; }
-    .weekly-group.open .weekly-group__content { display:flex; flex-wrap:wrap; gap:8px; }
-    .weekly-group__content button { background:#e2e8f0; color:var(--text); border:none; border-radius:999px; padding:6px 14px; cursor:pointer; font-size:.85rem; transition:background .2s; }
-    .weekly-group__content button:hover { background:#cbd5e1; }
-    .weekly-group__content button.active { background:var(--accent); color:#fff; }
+        .weekly-accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .weekly-group {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .weekly-group__header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #eef2ff;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .weekly-group__header.active {
+            background: #eaefff;
+        }
+        .weekly-group__title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .weekly-group__chev {
+            font-weight: 700;
+            width: 1.1em;
+            text-align: center;
+        }
+        .weekly-group__badge {
+            background: #e2e8f0;
+            border-radius: 999px;
+            padding: 2px 10px;
+            font-size: 0.75rem;
+            color: #0f172a;
+        }
+        .weekly-group__content {
+            display: none;
+            padding: 12px;
+            background: #fff;
+        }
+        .weekly-group.open .weekly-group__content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .weekly-group__content button {
+            background: #e2e8f0;
+            color: var(--text);
+            border: none;
+            border-radius: 999px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .weekly-group__content button:hover {
+            background: #cbd5e1;
+        }
+        .weekly-group__content button.active {
+            background: var(--accent);
+            color: #fff;
+        }
 
-    .counter { font-weight:500; margin:16px 0 8px; color:var(--muted); }
+        .counter {
+            font-weight: 500;
+            margin: 16px 0 8px;
+            color: var(--muted);
+        }
 
-    .shopping-list { list-style:none; padding:0; margin:0; }
-    .section-header { margin-top:16px; font-weight:600; color:var(--primary); font-size:1.1rem; border-bottom:1px solid #e2e8f0; padding-bottom:4px; cursor:default; }
-    .shopping-list li { padding:6px 10px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:background .2s; }
-    .shopping-list li:hover { background:#f1f5f9; }
-    .shopping-list small { color:var(--muted); font-size:.75rem; }
-    .shopping-list li.crossed { text-decoration:line-through; color:var(--muted); }
+        .shopping-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .section-header {
+            margin-top: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1.1rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            cursor: default;
+        }
+        .shopping-list li {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .shopping-list li:hover {
+            background: #f1f5f9;
+        }
+        .shopping-list small {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+        .shopping-list li.crossed {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
 
-    .custom-input { display:flex; gap:8px; margin-top:20px; }
-    .custom-input input { flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:var(--radius); font-size:.9rem; }
-    .custom-input button { background:var(--primary); color:#fff; border:none; border-radius:var(--radius); padding:8px 14px; cursor:pointer; font-size:.9rem; }
-    .custom-input button:hover { background:var(--primary-hover); }
+        .custom-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .custom-input input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+        .custom-input button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .custom-input button:hover {
+            background: var(--primary-hover);
+        }
 
-    .section__badge {
-      margin-left: auto;
-      background: #e2e8f0;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 0.8rem;
-      color: #0f172a;
-    }
+        .section__badge {
+            margin-left: auto;
+            background: #e2e8f0;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            color: #0f172a;
+        }
 
-    /* --- Collapsible sections --- */
-  details.section {
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius);
-    background: #fff;
-    margin: 12px 0 16px;
-    overflow: hidden;
-  }
-  details.section > summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 12px 14px;
-    background: #eef2ff;
-    font-weight: 600;
-    color: #0f172a;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  details.section > summary::-webkit-details-marker { display: none; }
-  .section__chev { font-weight: 700; width: 1.1em; text-align: center; }
-  details.section[open] > summary { background: #eaefff; }
+        /* --- Collapsible sections --- */
+        details.section {
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            background: #fff;
+            margin: 12px 0 16px;
+            overflow: hidden;
+        }
+        details.section > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 12px 14px;
+            background: #eef2ff;
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        details.section > summary::-webkit-details-marker {
+            display: none;
+        }
+        .section__chev {
+            font-weight: 700;
+            width: 1.1em;
+            text-align: center;
+        }
+        details.section[open] > summary {
+            background: #eaefff;
+        }
 
-  /* inner content wrapper */
-  .section__body { padding: 14px; background: #fff; }
+        /* inner content wrapper */
+        .section__body {
+            padding: 14px;
+            background: #fff;
+        }
 
-  /* --- Meals row -> single line, horizontal scroll --- */
-  .meal-row {
-    display: flex;
-    gap: 10px;
-    margin: 0;              /* tighter */
-    overflow-x: auto;
-    padding-bottom: 6px;
-    flex-wrap: nowrap;      /* one row */
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-  }
-  .meal-row button { scroll-snap-align: start; }
+        /* --- Meals row -> single line, horizontal scroll --- */
+        .meal-row {
+            display: flex;
+            gap: 10px;
+            margin: 0; /* tighter */
+            overflow-x: auto;
+            padding-bottom: 6px;
+            flex-wrap: nowrap; /* one row */
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+        }
+        .meal-row button {
+            scroll-snap-align: start;
+        }
 
-  /* Optional: slimmer scrollbar */
-  .meal-row::-webkit-scrollbar { height: 6px; }
-  .meal-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }  
+        /* Optional: slimmer scrollbar */
+        .meal-row::-webkit-scrollbar {
+            height: 6px;
+        }
+        .meal-row::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
 
-  /* Counter closer to sections */
-  .counter { margin: 10px 0 8px; }
+        /* Counter closer to sections */
+        .counter {
+            margin: 10px 0 8px;
+        }
 
-  /* Floating action button (add item) */
-  .fab {
-    position: fixed;
-    left: 16px;
-    bottom: 90px;     /* above tabbar */
-    width: 56px; height: 56px; border-radius: 50%;
-    border: none; background: var(--accent); color: #fff;
-    font-size: 28px; box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    cursor: pointer; z-index: 200;
-  }
+        /* Floating action button (add item) */
+        .fab {
+            position: fixed;
+            left: 16px;
+            bottom: 90px; /* above tabbar */
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            font-size: 28px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            z-index: 200;
+        }
 
-  /* Clear list button */
-  .clear-list {
-    position: fixed;
-    right: 16px;
-    bottom: 90px;     /* above tabbar */
-    background: var(--danger); color: #fff; border: none;
-    border-radius: 999px; padding: 10px 16px; font-size: .85rem; font-weight: 500;
-    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    z-index: 200;
-  }
-  .clear-list:hover { background: #dc2626; }
+        /* Clear list button */
+        .clear-list {
+            position: fixed;
+            right: 16px;
+            bottom: 90px; /* above tabbar */
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            z-index: 200;
+        }
+        .clear-list:hover {
+            background: #dc2626;
+        }
 
-  dialog { border: none; border-radius: var(--radius); padding: 16px; width: 90%; max-width: 420px; }
-  .add-form h3 { margin: 0 0 8px; }
-  .add-form input { width: 100%; padding: 10px; border:1px solid #cbd5e1; border-radius: 10px; margin-bottom: 8px; }
-  .suggestions { display: grid; gap: 6px; max-height: 220px; overflow: auto; }
-  .suggestions button {
-    text-align: left; border: 1px solid #e2e8f0; background:#fff; border-radius: 8px; padding: 8px 10px; cursor: pointer;
-  }
-  .suggestions button:hover { background:#f8fafc; }
-  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-  .actions button { padding: 8px 12px; border:none; border-radius: 8px; }
-  #addConfirm { background: var(--primary); color: #fff; }
-  #addCancel { background: #e2e8f0; }
+        dialog {
+            border: none;
+            border-radius: var(--radius);
+            padding: 16px;
+            width: 90%;
+            max-width: 420px;
+        }
+        .add-form h3 {
+            margin: 0 0 8px;
+        }
+        .add-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .suggestions {
+            display: grid;
+            gap: 6px;
+            max-height: 220px;
+            overflow: auto;
+        }
+        .suggestions button {
+            text-align: left;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+        .suggestions button:hover {
+            background: #f8fafc;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .actions button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+        }
+        #addConfirm {
+            background: var(--primary);
+            color: #fff;
+        }
+        #addCancel {
+            background: #e2e8f0;
+        }
 
-  /* --- Tabs / pages --- */
-  .tabpage { display: none; }
-  .tabpage.active { display: block; }
+        /* --- Tabs / pages --- */
+        .tabpage {
+            display: none;
+        }
+        .tabpage.active {
+            display: block;
+        }
 
-  /* Make space so the tabbar doesn't overlap content or floating buttons */
-  .app { padding-bottom: 110px; }
+        /* Make space so the tabbar doesn't overlap content or floating buttons */
+        .app {
+            padding-bottom: 110px;
+        }
 
-  /* --- Recipes tab --- */
-  .recipes-toolbar {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:12px 16px;
-  }
-  .recipes-grid {
-    display:grid; gap:12px; padding:0 16px 16px;
-  }
-  .recipe-card {
-    border:1px solid #e2e8f0; border-radius:12px; background:#fff; padding:12px;
-    display:grid; gap:8px;
-  }
-  .recipe-card header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .recipe-card .tags { display:flex; flex-wrap:wrap; gap:6px; }
-  .recipe-card .tags span { background:#eef2ff; border-radius:999px; padding:2px 8px; font-size:.75rem; color:#0f172a; }
-  .recipe-card .actions { display:flex; gap:8px; justify-content:flex-end; }
-  .btn { border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:.9rem; }
-  .btn.primary { background:var(--primary); color:#fff; }
-  .btn.ghost { background:#e2e8f0; color:#0f172a; }
-  .btn.danger { background:var(--danger); color:#fff; }
+        /* --- Recipes tab --- */
+        .recipes-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+        .recipes-grid {
+            display: grid;
+            gap: 12px;
+            padding: 0 16px 16px;
+        }
+        .recipe-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px;
+            display: grid;
+            gap: 8px;
+        }
+        .recipe-card header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .recipe-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .recipe-card .tags span {
+            background: #eef2ff;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            color: #0f172a;
+        }
+        .recipe-card .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn.primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn.ghost {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .btn.danger {
+            background: var(--danger);
+            color: #fff;
+        }
 
-  /* Recipe editor dialog */
-  #recipeDialog { border:none; border-radius:12px; padding:16px; width:90%; max-width:520px; }
-  .recipe-form { display:grid; gap:10px; }
-  .recipe-form input, .recipe-form textarea {
-    width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font-size:.95rem;
-  }
-  .ing-suggestions { display:grid; gap:6px; max-height:180px; overflow:auto; }
-  .ing-suggestions button {
-    text-align:left; border:1px solid #e2e8f0; background:#fff; border-radius:8px; padding:6px 10px; cursor:pointer;
-  }
-  .ing-suggestions button:hover { background:#f8fafc; }
-  .recipe-dialog-actions { display:flex; gap:8px; justify-content:flex-end; }
+        /* Recipe editor dialog */
+        #recipeDialog {
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            width: 90%;
+            max-width: 520px;
+        }
+        .recipe-form {
+            display: grid;
+            gap: 10px;
+        }
+        .recipe-form input,
+        .recipe-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+        .ing-suggestions {
+            display: grid;
+            gap: 6px;
+            max-height: 180px;
+            overflow: auto;
+        }
+        .ing-suggestions button {
+            text-align: left;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        .ing-suggestions button:hover {
+            background: #f8fafc;
+        }
+        .recipe-dialog-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
 
-  /* --- Bottom tab bar --- */
-  .tabbar {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    background: #ffffff; border-top: 1px solid #e2e8f0;
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 0; z-index: 50;
-  }
-  .tabbar button {
-    appearance: none; border: none; background: transparent;
-    padding: 10px 6px; font-size: .9rem; color: #475569;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    cursor: pointer;
-  }
-  .tabbar button span { font-size: 1.1rem; line-height: 1; }
-  .tabbar button.active { color: var(--accent); font-weight: 600; }
+        /* --- Bottom tab bar --- */
+        .tabbar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            z-index: 50;
+        }
+        .tabbar button {
+            appearance: none;
+            border: none;
+            background: transparent;
+            padding: 10px 6px;
+            font-size: 0.9rem;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .tabbar button span {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+        .tabbar button.active {
+            color: var(--accent);
+            font-weight: 600;
+        }
 
-  /* --- Stores tab polish --- */
-  .stores-wrap { padding:16px; }
-  .stores-header {
-    display:flex; align-items:center; justify-content:space-between;
-    gap:12px; margin:6px 0 12px;   /* tighter above, clear space below */
-  }
-  .stores-header h2 { margin:0; display:flex; align-items:center; gap:8px; }
-  .stores-grid { display:grid; gap:12px; padding:0; }  /* no extra padding like recipes-grid */
-  .store-card { border:1px solid #e2e8f0; border-radius:12px; background:#fff; padding:12px; }
-  .store-card header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
-  .store-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
+        /* --- Stores tab polish --- */
+        .stores-wrap {
+            padding: 16px;
+        }
+        .stores-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 6px 0 12px; /* tighter above, clear space below */
+        }
+        .stores-header h2 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stores-grid {
+            display: grid;
+            gap: 12px;
+            padding: 0;
+        } /* no extra padding like recipes-grid */
+        .store-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+            padding: 12px;
+        }
+        .store-card header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .store-card .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
-  .badge { background:#eef2ff; border-radius:999px; padding:2px 8px; font-size:.75rem; color:#0f172a; }
-  .btn.sm { padding:6px 12px; font-size:.9rem; }       /* smaller pill for header button */
+        .badge {
+            background: #eef2ff;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            color: #0f172a;
+        }
+        .btn.sm {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        } /* smaller pill for header button */
 
-  </style>
+        /* --- Unified floating actions --- */
+        .fab-tray {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(72px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            z-index: 200;
+        }
+
+        /* Override the old per-button floating styles */
+        .fab,
+        .clear-list {
+            position: static !important;
+            inset: auto !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border-radius: 50% !important;
+            width: 48px !important;
+            height: 48px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px !important;
+            line-height: 1;
+        }
+
+        /* Colors to match app palette */
+        .fab {
+            background: var(--accent) !important;
+            color: #fff !important;
+        }
+        .clear-list {
+            background: var(--danger) !important;
+            color: #fff !important;
+        }
+
+        /* Give the page a touch more bottom padding so nothing overlaps */
+        .app {
+            padding-bottom: 130px;
+        }
+
+        /* --- Unified floating actions --- */
+        .fab-tray {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(72px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            z-index: 200;
+        }
+
+        /* Override the old per-button floating styles */
+        .fab,
+        .clear-list {
+            position: static !important;
+            inset: auto !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border-radius: 50% !important;
+            width: 48px !important;
+            height: 48px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px !important;
+            line-height: 1;
+        }
+
+        /* Colors to match app palette */
+        .fab {
+            background: var(--accent) !important;
+            color: #fff !important;
+        }
+        .clear-list {
+            background: var(--danger) !important;
+            color: #fff !important;
+        }
+
+        /* Give the page a touch more bottom padding so nothing overlaps */
+        .app {
+            padding-bottom: 130px;
+        }
+        /* --- Unified floating actions --- */
+        .fab-tray {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(72px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            z-index: 200;
+        }
+
+        /* Override the old per-button floating styles */
+        .fab,
+        .clear-list {
+            position: static !important;
+            inset: auto !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border-radius: 50% !important;
+            width: 48px !important;
+            height: 48px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px !important;
+            line-height: 1;
+        }
+
+        /* Colors to match app palette */
+        .fab {
+            background: var(--accent) !important;
+            color: #fff !important;
+        }
+        .clear-list {
+            background: var(--danger) !important;
+            color: #fff !important;
+        }
+
+        /* Give the page a touch more bottom padding so nothing overlaps */
+        .app {
+            padding-bottom: 130px;
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <h1>Weekboodschappen</h1>
+    <div class="app">
+        <h1>Weekboodschappen</h1>
 
-  <!-- TAB: LIST (current UI) -->
-  <section id="tab-list" class="tabpage active">
-    <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
+        <!-- TAB: LIST (current UI) -->
+        <section id="tab-list" class="tabpage active">
+            <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
 
-    <details id="sec-meals" class="section" open>
-      <summary>
-        <span class="section__chev">▼</span> 🍲 Maaltijden
-        <span id="mealCounter" class="section__badge">0 dagen</span>
-      </summary>
-      <div class="section__body">
-        <div class="meal-row" id="mealRow"></div>
-      </div>
-    </details>
+            <details id="sec-meals" class="section" open>
+                <summary>
+                    <span class="section__chev">▼</span> 🍲 Maaltijden
+                    <span id="mealCounter" class="section__badge">0 dagen</span>
+                </summary>
+                <div class="section__body">
+                    <div class="meal-row" id="mealRow"></div>
+                </div>
+            </details>
 
-    <details id="sec-weeklies" class="section" open>
-      <summary>
-        <span class="section__chev">▼</span> 📦 Weekboodschappen
-        <span id="weeklyCounter" class="section__badge">0 items</span>
-      </summary>
-      <div class="section__body">
-        <div id="weeklyAccordion" class="weekly-accordion"></div>
-      </div>
-    </details>
+            <details id="sec-weeklies" class="section" open>
+                <summary>
+                    <span class="section__chev">▼</span> 📦 Weekboodschappen
+                    <span id="weeklyCounter" class="section__badge">0 items</span>
+                </summary>
+                <div class="section__body">
+                    <div id="weeklyAccordion" class="weekly-accordion"></div>
+                </div>
+            </details>
 
-    <ul class="shopping-list" id="shoppingList"></ul>
+            <ul class="shopping-list" id="shoppingList"></ul>
 
-    <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
-    <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
-    <dialog id="addDialog">
-      <form method="dialog" id="addForm" class="add-form">
-        <h3>Item toevoegen</h3>
-        <input id="addInput" type="text" placeholder="Bijv. Paprika" autocomplete="off" />
-        <div id="suggestions" class="suggestions"></div>
-        <div class="actions">
-          <button value="cancel" type="button" id="addCancel">Annuleren</button>
-          <button value="ok" id="addConfirm">Toevoegen</button>
-        </div>
-      </form>
-    </dialog>
+            <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
+            <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
+            <dialog id="addDialog">
+                <form method="dialog" id="addForm" class="add-form">
+                    <h3>Item toevoegen</h3>
+                    <input id="addInput" type="text" placeholder="Bijv. Paprika" autocomplete="off" />
+                    <div id="suggestions" class="suggestions"></div>
+                    <div class="actions">
+                        <button value="cancel" type="button" id="addCancel">Annuleren</button>
+                        <button value="ok" id="addConfirm">Toevoegen</button>
+                    </div>
+                </form>
+            </dialog>
 
-    <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
-  </section>
+            <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
+        </section>
 
-  <!-- TAB: RECIPES (placeholder for M3) -->
-  <section id="tab-recipes" class="tabpage">
-    <div class="recipes-toolbar">
-      <h2 style="margin:0;">🍳 Recepten</h2>
-      <button id="newRecipeBtn" class="btn primary">Nieuw recept</button>
+        <!-- TAB: RECIPES (placeholder for M3) -->
+        <section id="tab-recipes" class="tabpage">
+            <div class="recipes-toolbar">
+                <h2 style="margin: 0;">🍳 Recepten</h2>
+                <button id="newRecipeBtn" class="btn primary">Nieuw recept</button>
+            </div>
+            <div id="recipesList" class="recipes-grid"></div>
+        </section>
+
+        <!-- Recipe editor dialog -->
+        <dialog id="recipeDialog">
+            <form method="dialog" id="recipeForm" class="recipe-form">
+                <h3 style="margin: 0;">Recept</h3>
+                <input id="recipeNameInput" type="text" placeholder="Receptnaam (bijv. Pasta Arrabiata)" />
+                <textarea id="recipeItemsInput" rows="5" placeholder="Ingrediënten (gescheiden door komma of nieuwe regel)"></textarea>
+                <div class="ing-suggestions" id="ingSuggestions"></div>
+                <div class="recipe-dialog-actions">
+                    <button type="button" id="recipeDeleteBtn" class="btn danger" style="margin-right: auto; display: none;">Verwijderen</button>
+                    <button value="cancel" type="button" id="recipeCancelBtn" class="btn ghost">Annuleren</button>
+                    <button value="ok" id="recipeSaveBtn" class="btn primary">Opslaan</button>
+                </div>
+            </form>
+        </dialog>
+
+        <!-- TAB: STORES (placeholder for M4) -->
+        <section id="tab-stores" class="tabpage">
+            <div class="section__body" style="padding: 16px;">
+                <h2 style="margin: 0 0 8px;">🏬 Winkels</h2>
+                <p style="color: #64748b; margin: 0;">Hier beheer je winkelprofielen en categorievolgorde (M4).</p>
+            </div>
+        </section>
+
+        <!-- Bottom tab bar -->
+        <nav class="tabbar" role="tablist" aria-label="Navigatie">
+            <button id="tabbtn-list" role="tab" aria-controls="tab-list"><span>📝</span>Lijst</button>
+            <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
+            <button id="tabbtn-stores" role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
+        </nav>
     </div>
-    <div id="recipesList" class="recipes-grid"></div>
-  </section>
-  
-  <!-- Recipe editor dialog -->
-  <dialog id="recipeDialog">
-    <form method="dialog" id="recipeForm" class="recipe-form">
-      <h3 style="margin:0;">Recept</h3>
-      <input id="recipeNameInput" type="text" placeholder="Receptnaam (bijv. Pasta Arrabiata)" />
-      <textarea id="recipeItemsInput" rows="5" placeholder="Ingrediënten (gescheiden door komma of nieuwe regel)"></textarea>
-      <div class="ing-suggestions" id="ingSuggestions"></div>
-      <div class="recipe-dialog-actions">
-        <button type="button" id="recipeDeleteBtn" class="btn danger" style="margin-right:auto; display:none;">Verwijderen</button>
-        <button value="cancel" type="button" id="recipeCancelBtn" class="btn ghost">Annuleren</button>
-        <button value="ok" id="recipeSaveBtn" class="btn primary">Opslaan</button>
-      </div>
-    </form>
-  </dialog>
-  
+    <script>
+        /* ---------- Firebase init ---------- */
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZWsoDIQYwCF-V2QuvYjxrFGB84gRnHFo",
+            authDomain: "grocify-2fd51.firebaseapp.com",
+            projectId: "grocify-2fd51",
+        };
+        firebase.initializeApp(firebaseConfig);
 
-  <!-- TAB: STORES (placeholder for M4) -->
-  <section id="tab-stores" class="tabpage">
-    <div class="section__body" style="padding:16px">
-      <h2 style="margin:0 0 8px;">🏬 Winkels</h2>
-      <p style="color:#64748b; margin:0;">Hier beheer je winkelprofielen en categorievolgorde (M4).</p>
-    </div>
-  </section>
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-  <!-- Bottom tab bar -->
-  <nav class="tabbar" role="tablist" aria-label="Navigatie">
-    <button id="tabbtn-list"   role="tab" aria-controls="tab-list"><span>📝</span>Lijst</button>
-    <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
-    <button id="tabbtn-stores"  role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
-  </nav>
-  </div>
-  <script>
-    /* ---------- Firebase init ---------- */
-    const firebaseConfig = {
-      apiKey: "AIzaSyCZWsoDIQYwCF-V2QuvYjxrFGB84gRnHFo",
-      authDomain: "grocify-2fd51.firebaseapp.com",
-      projectId: "grocify-2fd51"
-    };
-    firebase.initializeApp(firebaseConfig);
-    
-    const auth = firebase.auth();
-    const db   = firebase.firestore();
-    
-    /* One shared list for everyone */
-    const HOUSEHOLD_ID = "shared";
-    const itemsCol  = db.collection('households').doc(HOUSEHOLD_ID).collection('listItems');
-    const stateDoc  = db.collection('households').doc(HOUSEHOLD_ID).collection('meta').doc('uiState');
-    const recipesCol= db.collection('households').doc(HOUSEHOLD_ID).collection('recipes');
-    
-    /* Helpers */
-    const inc    = firebase.firestore.FieldValue.increment;
-    const arrAdd = firebase.firestore.FieldValue.arrayUnion;
-    const arrDel = firebase.firestore.FieldValue.arrayRemove;
-    function slug(name){ return name.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^\w-]/g,''); }
-    function normalize(s){ return s.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,""); }
-    function suggestMatches(query, pool, limit=8){
-      const q = normalize(query).trim();
-      if(!q) return [];
-      const starts = pool.filter(x => normalize(x).startsWith(q));
-      const incl   = pool.filter(x => normalize(x).includes(q) && !starts.includes(x));
-      return [...starts, ...incl].slice(0, limit);
-    }
-    function inferSection(name){ return itemToSection[name] || "Eigen"; }
+        /* One shared list for everyone */
+        const HOUSEHOLD_ID = "shared";
+        const itemsCol = db.collection("households").doc(HOUSEHOLD_ID).collection("listItems");
+        const stateDoc = db.collection("households").doc(HOUSEHOLD_ID).collection("meta").doc("uiState");
+        const recipesCol = db.collection("households").doc(HOUSEHOLD_ID).collection("recipes");
 
-    /* --- Stores (Winkels) --- */
-    const storesCol = db.collection('households').doc(HOUSEHOLD_ID).collection('stores');
+        /* Helpers */
+        const inc = firebase.firestore.FieldValue.increment;
+        const arrAdd = firebase.firestore.FieldValue.arrayUnion;
+        const arrDel = firebase.firestore.FieldValue.arrayRemove;
+        function slug(name) {
+            return name
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, "-")
+                .replace(/[^\w-]/g, "");
+        }
+        function normalize(s) {
+            return s
+                .toLowerCase()
+                .normalize("NFKD")
+                .replace(/[\u0300-\u036f]/g, "");
+        }
+        function suggestMatches(query, pool, limit = 8) {
+            const q = normalize(query).trim();
+            if (!q) return [];
+            const starts = pool.filter((x) => normalize(x).startsWith(q));
+            const incl = pool.filter((x) => normalize(x).includes(q) && !starts.includes(x));
+            return [...starts, ...incl].slice(0, limit);
+        }
+        function inferSection(name) {
+            return itemToSection[name] || "Eigen";
+        }
 
-    let STORES = {};             // id -> { id, name, order[], hiddenCategories? }
-    let activeStoreId = null;
-    
-    /* ---------- Supermarket order ---------- */
-    const sectionOrder = [
-      "Groente & Fruit","Vega","Brood","Ontbijt & Smeersels","Zuivel",
-      "Pasta & Rijst","Kruiden & Specerijen","Chips & Snacks","Non-food","Diepvries","Toiletartikelen","Eigen"
-    ];
-    
-    /* ---------- Built-in meals (unchanged) ---------- */
-    const mealData = {
-      "Pizza": ["Pizzadeeg","Gesneden Champignons","Paprika","Paprika","Rode Ui","Tapenade","Cashewnoten"],
-      "Sticky Tofu": ["Tofu","Broccoli","Rijst azijn","Maizena","Sojasaus","Knoflook"],
-      "Stamppot Spinazie": ["Burger","Kruimige Aardappelen","Spinazie fijn diepvries"],
-      "Pasta": ["Paprika","Paprika","Gehakt","Winterpeen","Tomatenpuree","Cherry Tomaten blik","Saus zongedroogde tomaat","Ui wit","Knoflook"],
-      "Chili Sin Carne": ["Ui wit","Knoflook","Koriander","Chilipoeder","Komijnzaad","Zoete Aardappels","Zoete Aardappels","Tomatenblokjes (400gr)","Bosui","Bosui","Crème Fraîche (125ml)","Avocado","Maïskorrels (100gr)","Kidneybonen (100gr)"],
-      "Couscous Boerenkool": ["Ui wit","Knoflook","Chilipoeder","Boerenkool (300gr)","Couscous (200gr)","Rozijnen (50gr)","Kruidenbouillon (600ml)"]
-    };
-    
-    /* ---------- Weeklies (unchanged) ---------- */
-    const weeklyGroupsData = {
-      "Ontbijt & Lunch": ["Brood","Pindakaas","Hagelslag","Sojayoghurt","Havermout","Havermelk","Cruesli","Hummus","Rozijnen (50gr)"],
-      "Toiletartikelen": ["Toiletpapier","Zeep","Wasmiddel","Shampoo","Tandpasta","Afwasmiddel","Keukenpapier"],
-      "Vers": ["Blauwe Bessen","Bananen","Avocado","Avocado","Avocado","Avocado"],
-      "Meisjes": ["Groenvoer","Hooi","Brokjes"],
-      "Baby": ["Luiers","Babydoekjes","Kunstvoeding"],
-      "Appelschilletjes": ["Chocola","Chips","Big Hit","Drop","Apekoppen"]
-    };
-    
-    /* ---------- Mapping: item → section (unchanged) ---------- */
-    const itemToSection = {
-      "Kruimige Aardappelen":"Groente & Fruit","Paprika":"Groente & Fruit","Rode Ui":"Groente & Fruit","Ui wit":"Groente & Fruit",
-      "Knoflook":"Groente & Fruit","Broccoli":"Groente & Fruit","Zoete Aardappels":"Groente & Fruit","Gesneden Champignons":"Groente & Fruit",
-      "Bosui":"Groente & Fruit","Avocado":"Groente & Fruit","Blauwe Bessen":"Groente & Fruit","Bananen":"Groente & Fruit","Winterpeen":"Groente & Fruit",
-      "Boerenkool (300gr)":"Groente & Fruit","Groenvoer":"Groente & Fruit",
-      "Tofu":"Vega","Burger":"Vega","Gehakt":"Vega",
-      "Brood":"Brood","Pizzadeeg":"Brood",
-      "Pindakaas":"Ontbijt & Smeersels","Hagelslag":"Ontbijt & Smeersels","Sojayoghurt":"Ontbijt & Smeersels",
-      "Havermout":"Ontbijt & Smeersels","Havermelk":"Ontbijt & Smeersels","Cruesli":"Ontbijt & Smeersels",
-      "Tapenade":"Ontbijt & Smeersels","Hummus":"Ontbijt & Smeersels","Rozijnen (50gr)":"Ontbijt & Smeersels",
-      "Crème Fraîche (125ml)":"Zuivel",
-      "Rijst azijn":"Pasta & Rijst","Maizena":"Pasta & Rijst","Sojasaus":"Pasta & Rijst",
-      "Tomatenpuree":"Pasta & Rijst","Saus zongedroogde tomaat":"Pasta & Rijst","Cherry Tomaten blik":"Pasta & Rijst",
-      "Tomatenblokjes (400gr)":"Pasta & Rijst","Couscous (200gr)":"Pasta & Rijst","Kruidenbouillon (600ml)":"Pasta & Rijst",
-      "Chilipoeder":"Kruiden & Specerijen","Komijnzaad":"Kruiden & Specerijen","Koriander":"Kruiden & Specerijen",
-      "Cashewnoten":"Chips & Snacks","Chocola":"Chips & Snacks","Chips":"Chips & Snacks","Big Hit":"Chips & Snacks","Drop":"Chips & Snacks","Apekoppen":"Chips & Snacks",
-      "Hooi":"Non-food","Brokjes":"Non-food","Luiers":"Non-food","Babydoekjes":"Non-food","Kunstvoeding":"Non-food",
-      "Spinazie fijn diepvries":"Diepvries",
-      "Toiletpapier":"Toiletartikelen","Zeep":"Toiletartikelen","Wasmiddel":"Toiletartikelen",
-      "Shampoo":"Toiletartikelen","Tandpasta":"Toiletartikelen","Afwasmiddel":"Toiletartikelen","Keukenpapier":"Toiletartikelen"
-    };
-    
-    /* ---------- Local state ---------- */
-    let activeMeals = new Set();  // persisted via stateDoc (by display name)
-    let activeItems = {};         // { name: { count, sources:Set, checked } }
-    let KNOWN_ITEMS = [];
-    
-    let customRecipeDocs = {};    // name -> { id, items }
-    let combinedMeals    = {};    // name -> items[]  (built-ins + customs)
-    
-    /* ---------- Known items pool ---------- */
-    function getKnownItems(){
-      const fromMap   = Object.keys(itemToSection);
-      const fromMeals = Object.values(mealData).flat();
-      const fromWk    = Object.values(weeklyGroupsData).flat();
-      const fromCloud = Object.keys(activeItems);
-      const fromCustom= Object.values(customRecipeDocs).flatMap(d => d.items || []);
-      return Array.from(new Set([...fromMap, ...fromMeals, ...fromWk, ...fromCloud, ...fromCustom]))
-        .sort((a,b)=>a.localeCompare(b));
-    }
-    function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
-    
-    /* ---------- Auth + realtime ---------- */
-    auth.signInAnonymously().catch(console.error);
-    auth.onAuthStateChanged(async () => {
-      try { await firebase.firestore().enablePersistence({ synchronizeTabs: true }); } catch(e) { /* ok if not supported */ }
-    
-      // Shopping list live
-      itemsCol.onSnapshot(
-        snap => {
-          const docs = snap.docs.map(d => d.data());
-          setActiveFromCloud(docs);
-        },
-        err => console.error("onSnapshot items error", err)
-      );
-    
-      // Selected meals state live
-      stateDoc.onSnapshot(doc => {
-        const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
-        activeMeals = new Set(arr);
-        reflectMealPillsFromState();
+        /* --- Stores (Winkels) --- */
+        const storesCol = db.collection("households").doc(HOUSEHOLD_ID).collection("stores");
+
+        let STORES = {}; // id -> { id, name, order[], hiddenCategories? }
+        let activeStoreId = null;
+
+        /* ---------- Supermarket order ---------- */
+        const sectionOrder = ["Groente & Fruit", "Vega", "Brood", "Ontbijt & Smeersels", "Zuivel", "Pasta & Rijst", "Kruiden & Specerijen", "Chips & Snacks", "Non-food", "Diepvries", "Toiletartikelen", "Eigen"];
+
+        /* ---------- Built-in meals (unchanged) ---------- */
+        const mealData = {
+            Pizza: ["Pizzadeeg", "Gesneden Champignons", "Paprika", "Paprika", "Rode Ui", "Tapenade", "Cashewnoten"],
+            "Sticky Tofu": ["Tofu", "Broccoli", "Rijst azijn", "Maizena", "Sojasaus", "Knoflook"],
+            "Stamppot Spinazie": ["Burger", "Kruimige Aardappelen", "Spinazie fijn diepvries"],
+            Pasta: ["Paprika", "Paprika", "Gehakt", "Winterpeen", "Tomatenpuree", "Cherry Tomaten blik", "Saus zongedroogde tomaat", "Ui wit", "Knoflook"],
+            "Chili Sin Carne": [
+                "Ui wit",
+                "Knoflook",
+                "Koriander",
+                "Chilipoeder",
+                "Komijnzaad",
+                "Zoete Aardappels",
+                "Zoete Aardappels",
+                "Tomatenblokjes (400gr)",
+                "Bosui",
+                "Bosui",
+                "Crème Fraîche (125ml)",
+                "Avocado",
+                "Maïskorrels (100gr)",
+                "Kidneybonen (100gr)",
+            ],
+            "Couscous Boerenkool": ["Ui wit", "Knoflook", "Chilipoeder", "Boerenkool (300gr)", "Couscous (200gr)", "Rozijnen (50gr)", "Kruidenbouillon (600ml)"],
+        };
+
+        /* ---------- Weeklies (unchanged) ---------- */
+        const weeklyGroupsData = {
+            "Ontbijt & Lunch": ["Brood", "Pindakaas", "Hagelslag", "Sojayoghurt", "Havermout", "Havermelk", "Cruesli", "Hummus", "Rozijnen (50gr)"],
+            Toiletartikelen: ["Toiletpapier", "Zeep", "Wasmiddel", "Shampoo", "Tandpasta", "Afwasmiddel", "Keukenpapier"],
+            Vers: ["Blauwe Bessen", "Bananen", "Avocado", "Avocado", "Avocado", "Avocado"],
+            Meisjes: ["Groenvoer", "Hooi", "Brokjes"],
+            Baby: ["Luiers", "Babydoekjes", "Kunstvoeding"],
+            Appelschilletjes: ["Chocola", "Chips", "Big Hit", "Drop", "Apekoppen"],
+        };
+
+        /* ---------- Mapping: item → section (unchanged) ---------- */
+        const itemToSection = {
+            "Kruimige Aardappelen": "Groente & Fruit",
+            Paprika: "Groente & Fruit",
+            "Rode Ui": "Groente & Fruit",
+            "Ui wit": "Groente & Fruit",
+            Knoflook: "Groente & Fruit",
+            Broccoli: "Groente & Fruit",
+            "Zoete Aardappels": "Groente & Fruit",
+            "Gesneden Champignons": "Groente & Fruit",
+            Bosui: "Groente & Fruit",
+            Avocado: "Groente & Fruit",
+            "Blauwe Bessen": "Groente & Fruit",
+            Bananen: "Groente & Fruit",
+            Winterpeen: "Groente & Fruit",
+            "Boerenkool (300gr)": "Groente & Fruit",
+            Groenvoer: "Groente & Fruit",
+            Tofu: "Vega",
+            Burger: "Vega",
+            Gehakt: "Vega",
+            Brood: "Brood",
+            Pizzadeeg: "Brood",
+            Pindakaas: "Ontbijt & Smeersels",
+            Hagelslag: "Ontbijt & Smeersels",
+            Sojayoghurt: "Ontbijt & Smeersels",
+            Havermout: "Ontbijt & Smeersels",
+            Havermelk: "Ontbijt & Smeersels",
+            Cruesli: "Ontbijt & Smeersels",
+            Tapenade: "Ontbijt & Smeersels",
+            Hummus: "Ontbijt & Smeersels",
+            "Rozijnen (50gr)": "Ontbijt & Smeersels",
+            "Crème Fraîche (125ml)": "Zuivel",
+            "Rijst azijn": "Pasta & Rijst",
+            Maizena: "Pasta & Rijst",
+            Sojasaus: "Pasta & Rijst",
+            Tomatenpuree: "Pasta & Rijst",
+            "Saus zongedroogde tomaat": "Pasta & Rijst",
+            "Cherry Tomaten blik": "Pasta & Rijst",
+            "Tomatenblokjes (400gr)": "Pasta & Rijst",
+            "Couscous (200gr)": "Pasta & Rijst",
+            "Kruidenbouillon (600ml)": "Pasta & Rijst",
+            Chilipoeder: "Kruiden & Specerijen",
+            Komijnzaad: "Kruiden & Specerijen",
+            Koriander: "Kruiden & Specerijen",
+            Cashewnoten: "Chips & Snacks",
+            Chocola: "Chips & Snacks",
+            Chips: "Chips & Snacks",
+            "Big Hit": "Chips & Snacks",
+            Drop: "Chips & Snacks",
+            Apekoppen: "Chips & Snacks",
+            Hooi: "Non-food",
+            Brokjes: "Non-food",
+            Luiers: "Non-food",
+            Babydoekjes: "Non-food",
+            Kunstvoeding: "Non-food",
+            "Spinazie fijn diepvries": "Diepvries",
+            Toiletpapier: "Toiletartikelen",
+            Zeep: "Toiletartikelen",
+            Wasmiddel: "Toiletartikelen",
+            Shampoo: "Toiletartikelen",
+            Tandpasta: "Toiletartikelen",
+            Afwasmiddel: "Toiletartikelen",
+            Keukenpapier: "Toiletartikelen",
+        };
+
+        /* ---------- Local state ---------- */
+        let activeMeals = new Set(); // persisted via stateDoc (by display name)
+        let activeItems = {}; // { name: { count, sources:Set, checked } }
+        let KNOWN_ITEMS = [];
+
+        let customRecipeDocs = {}; // name -> { id, items }
+        let combinedMeals = {}; // name -> items[]  (built-ins + customs)
+
+        /* ---------- Known items pool ---------- */
+        function getKnownItems() {
+            const fromMap = Object.keys(itemToSection);
+            const fromMeals = Object.values(mealData).flat();
+            const fromWk = Object.values(weeklyGroupsData).flat();
+            const fromCloud = Object.keys(activeItems);
+            const fromCustom = Object.values(customRecipeDocs).flatMap((d) => d.items || []);
+            return Array.from(new Set([...fromMap, ...fromMeals, ...fromWk, ...fromCloud, ...fromCustom])).sort((a, b) => a.localeCompare(b));
+        }
+        function refreshKnownItems() {
+            KNOWN_ITEMS = getKnownItems();
+        }
+
+        /* ---------- Auth + realtime ---------- */
+        auth.signInAnonymously().catch(console.error);
+        auth.onAuthStateChanged(async () => {
+            try {
+                await firebase.firestore().enablePersistence({ synchronizeTabs: true });
+            } catch (e) {
+                /* ok if not supported */
+            }
+
+            // Shopping list live
+            itemsCol.onSnapshot(
+                (snap) => {
+                    const docs = snap.docs.map((d) => d.data());
+                    setActiveFromCloud(docs);
+                },
+                (err) => console.error("onSnapshot items error", err)
+            );
+
+            // Selected meals state live
+            stateDoc.onSnapshot(
+                (doc) => {
+                    const arr = doc.exists && Array.isArray(doc.data().activeMeals) ? doc.data().activeMeals : [];
+                    activeMeals = new Set(arr);
+                    reflectMealPillsFromState();
+                    updateCounter();
+                    renderRecipesPage(); // badge states
+                },
+                (err) => console.error("onSnapshot state error", err)
+            );
+
+            // Custom recipes live
+            recipesCol.orderBy("name").onSnapshot(
+                (snap) => {
+                    const map = {};
+                    snap.docs.forEach((d) => {
+                        const data = d.data() || {};
+                        const name = (data.name || "").trim();
+                        if (!name) return;
+                        map[name] = { id: d.id, items: Array.isArray(data.items) ? data.items : [] };
+                    });
+                    customRecipeDocs = map;
+                    recomputeCombinedMeals(); // pills + recipes detail share this
+                },
+                (err) => console.error("recipes onSnapshot error", err)
+            );
+
+            // Stores live
+            storesCol.orderBy("name").onSnapshot((snap) => {
+                const map = {};
+                snap.forEach((d) => (map[d.id] = { id: d.id, ...(d.data() || {}) }));
+                STORES = map;
+                renderStoresPage(); // update Shops tab
+                renderList(); // re-sort list if needed
+            });
+
+            // uiState live (extend your existing stateDoc.onSnapshot handler)
+            stateDoc.onSnapshot(
+                (doc) => {
+                    const d = doc.data() || {};
+                    activeStoreId = d.activeStoreId || null;
+                    reflectActiveStoreBadge();
+                    renderList();
+                },
+                (err) => console.error("onSnapshot state error (stores)", err)
+            );
+        });
+
+        /* ---------- Cloud writes ---------- */
+        async function cloudAddItem(name, section, origin) {
+            try {
+                const id = slug(name);
+                await itemsCol.doc(id).set(
+                    {
+                        name,
+                        section,
+                        count: inc(1),
+                        origins: arrAdd(origin),
+                        checked: false,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    },
+                    { merge: true }
+                );
+            } catch (err) {
+                console.error("cloudAddItem failed", err);
+                alert("Kon item niet toevoegen: " + err.message);
+            }
+        }
+        async function cloudRemoveItem(name, origin) {
+            const id = slug(name);
+            await db.runTransaction(async (tx) => {
+                const ref = itemsCol.doc(id);
+                const snap = await tx.get(ref);
+                if (!snap.exists) return;
+                const data = snap.data();
+                const newCount = (data.count || 0) - 1;
+                if (newCount <= 0) tx.delete(ref);
+                else tx.update(ref, { count: newCount, origins: arrDel(origin) });
+            });
+        }
+        async function cloudToggleChecked(name, checked) {
+            await itemsCol.doc(slug(name)).set({ checked }, { merge: true });
+        }
+        async function saveMealState() {
+            try {
+                await stateDoc.set({ activeMeals: Array.from(activeMeals) }, { merge: true });
+            } catch (e) {
+                console.error("saveMealState failed", e);
+            }
+        }
+        async function cloudClearList() {
+            const snap = await itemsCol.get();
+            const batch = db.batch();
+            snap.forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
+            activeMeals = new Set();
+            await saveMealState();
+        }
+
+        /* ---------- Meals dataset = built-ins + customs ---------- */
+        function recomputeCombinedMeals() {
+            combinedMeals = { ...mealData };
+            Object.entries(customRecipeDocs).forEach(([name, doc]) => {
+                combinedMeals[name] = doc.items || [];
+            });
+            refreshKnownItems();
+            renderMeals();
+            renderRecipesPage();
+        }
+
+        /* ---------- Meals UI (pills) ---------- */
+        function renderMeals() {
+            const row = document.getElementById("mealRow");
+            row.innerHTML = "";
+
+            // sort by name; keep built-ins first? -> simple alpha for now
+            const names = Object.keys(combinedMeals).sort((a, b) => a.localeCompare(b));
+
+            names.forEach((meal) => {
+                const btn = document.createElement("button");
+                btn.textContent = meal;
+                btn.dataset.meal = meal;
+                btn.classList.toggle("active", activeMeals.has(meal));
+                btn.onclick = async () => {
+                    const willActivate = !btn.classList.contains("active");
+                    const items = combinedMeals[meal] || [];
+                    if (willActivate) {
+                        activeMeals.add(meal);
+                        for (const item of items) {
+                            const sec = inferSection(item);
+                            cloudAddItem(item, sec, meal);
+                        }
+                    } else {
+                        activeMeals.delete(meal);
+                        for (const item of items) {
+                            cloudRemoveItem(item, meal);
+                        }
+                    }
+                    btn.classList.toggle("active", willActivate);
+                    updateCounter();
+                    await saveMealState();
+                    renderRecipesPage(); // keep badges in sync
+                };
+                row.appendChild(btn);
+            });
+        }
+        function reflectMealPillsFromState() {
+            const row = document.getElementById("mealRow");
+            if (!row) return;
+            row.querySelectorAll("button[data-meal]").forEach((btn) => {
+                const meal = btn.dataset.meal;
+                btn.classList.toggle("active", activeMeals.has(meal));
+            });
+        }
+
+        /* ---------- Weeklies Accordion UI (unchanged) ---------- */
+        function renderWeeklies() {
+            const container = document.getElementById("weeklyAccordion");
+            container.innerHTML = "";
+            Object.keys(weeklyGroupsData).forEach((group) => {
+                const card = document.createElement("div");
+                card.className = "weekly-group";
+                card.dataset.group = group;
+
+                const header = document.createElement("button");
+                header.className = "weekly-group__header";
+                header.onclick = () => toggleWeeklyGroupAccordion(group);
+
+                const titleWrap = document.createElement("span");
+                titleWrap.className = "weekly-group__title";
+
+                const chev = document.createElement("span");
+                chev.className = "weekly-group__chev";
+                chev.textContent = "►";
+
+                const title = document.createElement("span");
+                title.textContent = group;
+
+                titleWrap.append(chev, title);
+
+                const badge = document.createElement("span");
+                badge.className = "weekly-group__badge";
+                badge.textContent = "0 geselecteerd";
+
+                header.append(titleWrap, badge);
+
+                const content = document.createElement("div");
+                content.className = "weekly-group__content";
+                content.id = `group-${group}`;
+
+                weeklyGroupsData[group].forEach((item) => {
+                    const b = document.createElement("button");
+                    b.textContent = item;
+                    b.dataset.item = item;
+                    b.onclick = () => {
+                        const active = b.classList.toggle("active");
+                        if (active) {
+                            const sec = inferSection(item);
+                            cloudAddItem(item, sec, group);
+                        } else {
+                            cloudRemoveItem(item, group);
+                        }
+                        updateWeeklyBadge(group);
+                    };
+                    content.appendChild(b);
+                });
+
+                card.append(header, content);
+                container.appendChild(card);
+                updateWeeklyBadge(group);
+            });
+            syncWeeklySelectionsFromCloud();
+        }
+        function toggleWeeklyGroupAccordion(groupName) {
+            const cards = document.querySelectorAll(".weekly-group");
+            cards.forEach((card) => {
+                const header = card.querySelector(".weekly-group__header");
+                const chev = card.querySelector(".weekly-group__chev");
+                const isTarget = card.dataset.group === groupName;
+                if (isTarget) {
+                    const willOpen = !card.classList.contains("open");
+                    card.classList.toggle("open", willOpen);
+                    chev.textContent = willOpen ? "▼" : "►";
+                    header.classList.toggle("active", willOpen);
+                    if (willOpen) card.scrollIntoView({ behavior: "smooth", block: "start" });
+                } else {
+                    card.classList.remove("open");
+                    header.classList.remove("active");
+                    const otherChev = card.querySelector(".weekly-group__chev");
+                    if (otherChev) otherChev.textContent = "►";
+                }
+            });
+        }
+        function updateWeeklyBadge(groupName) {
+            const count = Object.entries(activeItems).filter(([_, data]) => data.sources.has(groupName)).length;
+            const card = document.querySelector(`.weekly-group[data-group="${CSS.escape(groupName)}"]`);
+            if (!card) return;
+            const badge = card.querySelector(".weekly-group__badge");
+            badge.textContent = count === 1 ? "1 geselecteerd" : `${count} geselecteerd`;
+        }
+        function updateAllWeeklyBadges() {
+            Object.keys(weeklyGroupsData).forEach(updateWeeklyBadge);
+        }
+        function syncWeeklySelectionsFromCloud() {
+            Object.keys(weeklyGroupsData).forEach((group) => {
+                const content = document.getElementById(`group-${group}`);
+                if (!content) return;
+                content.querySelectorAll("button").forEach((btn) => {
+                    const item = btn.dataset.item;
+                    const cloud = activeItems[item];
+                    const shouldBeActive = !!(cloud && cloud.sources.has(group));
+                    btn.classList.toggle("active", shouldBeActive);
+                });
+                updateWeeklyBadge(group);
+            });
+            updateWeeklyHeaderCounter();
+        }
+
+        /* ---------- Shopping list ---------- */
+        function updateCounter() {
+            const el = document.getElementById("mealCounter");
+            if (!el) return;
+            const n = activeMeals.size;
+            el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
+        }
+        function updateWeeklyHeaderCounter() {
+            const el = document.getElementById("weeklyCounter");
+            if (!el) return;
+            const weeklyGroups = new Set(Object.keys(weeklyGroupsData));
+            let count = 0;
+            for (const data of Object.values(activeItems)) {
+                const hasWeeklySource = [...data.sources].some((src) => weeklyGroups.has(src));
+                if (hasWeeklySource) count++;
+            }
+            el.textContent = count === 1 ? "1 item" : `${count} items`;
+        }
+        function setActiveFromCloud(cloudDocs) {
+            activeItems = {};
+            cloudDocs.forEach((d) => {
+                activeItems[d.name] = {
+                    count: d.count || 1,
+                    sources: new Set(d.origins || []),
+                    checked: !!d.checked,
+                };
+            });
+            refreshKnownItems();
+            renderList();
+            syncWeeklySelectionsFromCloud();
+            updateAllWeeklyBadges();
+            updateWeeklyHeaderCounter();
+        }
+        function renderList() {
+            const ul = document.getElementById("shoppingList");
+            ul.innerHTML = "";
+            currentSectionOrder().forEach((section) => {
+                const items = Object.keys(activeItems).filter((i) => (itemToSection[i] || "Eigen") === section);
+                if (items.length > 0) {
+                    const header = document.createElement("li");
+                    header.className = "section-header";
+                    header.textContent = section;
+                    ul.appendChild(header);
+                    items.forEach((name) => {
+                        const data = activeItems[name];
+                        const li = document.createElement("li");
+                        const label = data.count > 1 ? `${name} (${data.count}x)` : name;
+                        const span = document.createElement("span");
+                        span.textContent = label;
+                        const small = document.createElement("small");
+                        small.textContent = Array.from(data.sources).join(", ");
+                        li.append(span, small);
+                        li.classList.toggle("crossed", !!data.checked);
+                        li.onclick = () => cloudToggleChecked(name, !li.classList.contains("crossed"));
+                        ul.appendChild(li);
+                    });
+                }
+            });
+        }
+
+        /* ---------- UI state for details sections (unchanged) ---------- */
+        const mealsDetails = document.getElementById("sec-meals");
+        const weekliesDetails = document.getElementById("sec-weeklies");
+        if (localStorage.getItem("sec-weeklies-open") === null && window.innerWidth < 768) {
+            weekliesDetails.removeAttribute("open");
+        }
+        const s1 = localStorage.getItem("sec-meals-open");
+        if (s1 !== null) mealsDetails.toggleAttribute("open", s1 === "true");
+        const s2 = localStorage.getItem("sec-weeklies-open");
+        if (s2 !== null) weekliesDetails.toggleAttribute("open", s2 === "true");
+        function wireDetails(detailsEl) {
+            const summary = detailsEl.querySelector("summary .section__chev");
+            const update = () => {
+                if (summary) summary.textContent = detailsEl.open ? "▼" : "►";
+            };
+            update();
+            detailsEl.addEventListener("toggle", () => {
+                update();
+                const key = detailsEl.id + "-open";
+                localStorage.setItem(key, String(detailsEl.open));
+            });
+        }
+        wireDetails(mealsDetails);
+        wireDetails(weekliesDetails);
+
+        /* ---------- Clear list ---------- */
+        document.getElementById("clearListBtn").addEventListener("click", async () => {
+            await cloudClearList();
+            document.querySelectorAll(".meal-row button").forEach((b) => b.classList.remove("active"));
+            document.querySelectorAll(".weekly-group__content button").forEach((b) => b.classList.remove("active"));
+            document.querySelectorAll(".weekly-group").forEach((card) => {
+                card.classList.remove("open");
+                card.querySelector(".weekly-group__header").classList.remove("active");
+                card.querySelector(".weekly-group__chev").textContent = "►";
+            });
+            updateCounter();
+        });
+
+        /* ---------- Tabs / Hash Router (unchanged) ---------- */
+        (function () {
+            const TABS = ["list", "recipes", "stores"];
+            const DEFAULT_TAB = "list";
+            const STORAGE_KEY = "ui-active-tab";
+
+            const pages = {
+                list: document.getElementById("tab-list"),
+                recipes: document.getElementById("tab-recipes"),
+                stores: document.getElementById("tab-stores"),
+            };
+            const buttons = {
+                list: document.getElementById("tabbtn-list"),
+                recipes: document.getElementById("tabbtn-recipes"),
+                stores: document.getElementById("tabbtn-stores"),
+            };
+
+            function setActive(name) {
+                Object.entries(pages).forEach(([k, el]) => el.classList.toggle("active", k === name));
+                Object.entries(buttons).forEach(([k, btn]) => {
+                    const isActive = k === name;
+                    btn.classList.toggle("active", isActive);
+                    btn.setAttribute("aria-selected", String(isActive));
+                    btn.setAttribute("tabindex", isActive ? "0" : "-1");
+                });
+                localStorage.setItem(STORAGE_KEY, name);
+            }
+            function normalize(hash) {
+                const key = (hash || "").replace(/^#/, "");
+                return ["list", "recipes", "stores"].includes(key) ? key : null;
+            }
+            function syncFromHash() {
+                const byHash = normalize(location.hash);
+                const remembered = localStorage.getItem(STORAGE_KEY);
+                const target = byHash || (["list", "recipes", "stores"].includes(remembered) ? remembered : DEFAULT_TAB);
+                if (!byHash) history.replaceState(null, "", "#" + target);
+                setActive(target);
+            }
+            Object.entries(buttons).forEach(([name, btn]) => {
+                btn.addEventListener("click", () => {
+                    if (location.hash !== "#" + name) location.hash = name;
+                    else setActive(name);
+                });
+            });
+            window.addEventListener("hashchange", syncFromHash);
+            syncFromHash();
+        })();
+
+        /* ---------- Add item FAB + dialog (unchanged) ---------- */
+        const fab = document.getElementById("fabAdd");
+        const dlg = document.getElementById("addDialog");
+        const addInput = document.getElementById("addInput");
+        const addConfirm = document.getElementById("addConfirm");
+        const addCancel = document.getElementById("addCancel");
+        const suggBox = document.getElementById("suggestions");
+
+        function refreshKnownItemsAndClearDialog() {
+            refreshKnownItems();
+            suggBox.innerHTML = "";
+            addInput.value = "";
+        }
+
+        fab.addEventListener("click", () => {
+            refreshKnownItemsAndClearDialog();
+            dlg.showModal();
+            setTimeout(() => addInput.focus(), 0);
+        });
+        addCancel.addEventListener("click", () => dlg.close());
+        addInput.addEventListener("input", () => {
+            const q = addInput.value;
+            const matches = suggestMatches(q, KNOWN_ITEMS);
+            suggBox.innerHTML = "";
+            matches.forEach((name) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.textContent = name + " · " + inferSection(name);
+                b.addEventListener("click", async () => {
+                    await addName(name);
+                    addInput.value = "";
+                    dlg.close();
+                });
+                suggBox.appendChild(b);
+            });
+        });
+        addInput.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (!addInput.value.trim()) return;
+                await addName(addInput.value.trim());
+                addInput.value = "";
+                dlg.close();
+            }
+        });
+        addConfirm.addEventListener("click", async (e) => {
+            e.preventDefault();
+            if (!addInput.value.trim()) return;
+            await addName(addInput.value.trim());
+            addInput.value = "";
+            dlg.close();
+        });
+        async function addName(name) {
+            const sec = inferSection(name);
+            await cloudAddItem(name, sec, "Eigen");
+        }
+
+        /* ---------- Recipes tab: detail view + CRUD (custom only) ---------- */
+        const recipesListEl = document.getElementById("recipesList");
+        const newRecipeBtn = document.getElementById("newRecipeBtn");
+        const recipeDialog = document.getElementById("recipeDialog");
+        const recipeNameInput = document.getElementById("recipeNameInput");
+        const recipeItemsInput = document.getElementById("recipeItemsInput");
+        const recipeSaveBtn = document.getElementById("recipeSaveBtn");
+        const recipeCancelBtn = document.getElementById("recipeCancelBtn");
+        const recipeDeleteBtn = document.getElementById("recipeDeleteBtn");
+        const ingSuggestionsBox = document.getElementById("ingSuggestions");
+
+        let editingRecipeId = null; // existing doc id when editing
+        let editingIsNew = true; // new vs edit
+
+        newRecipeBtn.addEventListener("click", () => openRecipeDialog(null));
+
+        function renderRecipesPage() {
+            // Render detail cards for combinedMeals (built-ins + customs)
+            if (!recipesListEl) return;
+            recipesListEl.innerHTML = "";
+
+            const names = Object.keys(combinedMeals).sort((a, b) => a.localeCompare(b));
+            if (names.length === 0) {
+                const p = document.createElement("p");
+                p.style.color = "#64748b";
+                p.style.padding = "0 16px 16px";
+                p.textContent = "Nog geen recepten.";
+                recipesListEl.appendChild(p);
+                return;
+            }
+
+            names.forEach((name) => {
+                const items = combinedMeals[name] || [];
+                const isCustom = !!customRecipeDocs[name];
+                const isActive = activeMeals.has(name);
+
+                const card = document.createElement("div");
+                card.className = "recipe-card";
+
+                const header = document.createElement("header");
+                const title = document.createElement("strong");
+                title.textContent = name;
+                const right = document.createElement("div");
+                right.style.display = "flex";
+                right.style.gap = "8px";
+                right.style.alignItems = "center";
+
+                const badgeCount = document.createElement("span");
+                badgeCount.className = "badge";
+                badgeCount.textContent = `${items.length} items`;
+
+                const badgeSel = document.createElement("span");
+                badgeSel.className = "badge";
+                badgeSel.style.background = isActive ? "#dcfce7" : "#eef2ff";
+                badgeSel.textContent = isActive ? "Geselecteerd" : "Niet geselecteerd";
+
+                right.append(badgeCount, badgeSel);
+                header.append(title, right);
+
+                const tags = document.createElement("div");
+                tags.className = "tags";
+                items.slice(0, 24).forEach((i) => {
+                    const t = document.createElement("span");
+                    t.textContent = i;
+                    tags.appendChild(t);
+                });
+
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                if (isCustom) {
+                    const editBtn = document.createElement("button");
+                    editBtn.className = "btn ghost";
+                    editBtn.textContent = "Bewerken";
+                    editBtn.onclick = () => openRecipeDialog({ name, ...customRecipeDocs[name] });
+
+                    const delBtn = document.createElement("button");
+                    delBtn.className = "btn danger";
+                    delBtn.textContent = "Verwijderen";
+                    delBtn.onclick = async () => {
+                        if (!confirm(`Recept "${name}" verwijderen?`)) return;
+                        // If it is currently active, remove its items first to keep counts correct
+                        if (activeMeals.has(name)) {
+                            for (const item of items) {
+                                await cloudRemoveItem(item, name);
+                            }
+                            activeMeals.delete(name);
+                            await saveMealState();
+                            reflectMealPillsFromState();
+                            updateCounter();
+                        }
+                        await recipesCol.doc(customRecipeDocs[name].id).delete();
+                        // onSnapshot will refresh combinedMeals and UI
+                    };
+
+                    actions.append(editBtn, delBtn);
+                } else {
+                    const ro = document.createElement("small");
+                    ro.style.color = "#64748b";
+                    ro.textContent = "Standaard recept";
+                    actions.append(ro);
+                }
+
+                card.append(header, tags, actions);
+                recipesListEl.appendChild(card);
+            });
+        }
+
+        // Dialog open/close
+        function openRecipeDialog(recipe) {
+            editingIsNew = !recipe;
+            editingRecipeId = recipe ? recipe.id : null;
+
+            recipeNameInput.value = recipe ? recipe.name || "" : "";
+            recipeItemsInput.value = recipe ? (recipe.items || []).join("\n") : "";
+
+            // Editing existing: lock name to avoid origin mismatches in current list logic
+            recipeNameInput.disabled = !!recipe;
+            recipeDeleteBtn.style.display = recipe ? "inline-block" : "none";
+
+            ingSuggestionsBox.innerHTML = "";
+            recipeDialog.showModal();
+            setTimeout(() => (recipe ? recipeItemsInput : recipeNameInput).focus(), 0);
+        }
+        recipeCancelBtn.addEventListener("click", () => recipeDialog.close());
+
+        // Delete inside dialog (same as card delete)
+        recipeDeleteBtn.addEventListener("click", async () => {
+            if (!editingRecipeId) return;
+            const name = recipeNameInput.value || "recept";
+            if (confirm(`Verwijder "${name}"?`)) {
+                // If active: remove its items and unselect
+                if (activeMeals.has(name)) {
+                    const items = combinedMeals[name] || [];
+                    for (const it of items) {
+                        await cloudRemoveItem(it, name);
+                    }
+                    activeMeals.delete(name);
+                    await saveMealState();
+                    reflectMealPillsFromState();
+                    updateCounter();
+                }
+                await recipesCol.doc(editingRecipeId).delete();
+                recipeDialog.close();
+            }
+        });
+
+        // Save (create or update ingreds)
+        recipeSaveBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+
+            const name = (recipeNameInput.value || "").trim();
+            const items = parseItems(recipeItemsInput.value);
+
+            if (editingIsNew && !name) {
+                alert("Geef een naam.");
+                return;
+            }
+            if (items.length === 0) {
+                alert("Voeg minimaal één ingrediënt toe.");
+                return;
+            }
+
+            const payload = {
+                name,
+                items,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                ...(editingIsNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+            };
+
+            try {
+                if (editingIsNew) {
+                    const id = slug(name) || "r-" + Date.now();
+                    await recipesCol.doc(id).set(payload, { merge: true });
+                } else {
+                    // Only update items for existing recipe (name locked)
+                    await recipesCol.doc(editingRecipeId).set({ items, updatedAt: payload.updatedAt }, { merge: true });
+                    // If recipe is active, we need to sync list deltas? For simplicity, we do not auto-diff:
+                    // user can toggle pill off/on to refresh quantities if needed.
+                }
+                recipeDialog.close();
+            } catch (err) {
+                console.error("save recipe failed", err);
+                alert("Opslaan mislukt: " + err.message);
+            }
+        });
+
+        /* ---------- Shops tab UI ---------- */
+        function reflectActiveStoreBadge() {
+            // Optional: show active store name in List tab header badge or somewhere subtle
+            // (keep minimal for MVP)
+        }
+
+        function renderStoresPage() {
+            const container = document.getElementById("tab-stores");
+            if (!container) return;
+
+            container.innerHTML = `
+<div class="stores-wrap">
+<div class="stores-header">
+<h2>🏬 Winkels</h2>
+<button id="storeAddBtn" class="btn primary sm">Nieuwe winkel</button>
+</div>
+<div id="storesGrid" class="stores-grid"></div>
+</div>
+`;
+
+            const addBtn = container.querySelector("#storeAddBtn");
+            addBtn.onclick = async () => {
+                const name = prompt("Naam van de winkel (bijv. Jumbo, AH XL)?");
+                if (!name || !name.trim()) return;
+                const id = await createStore(name.trim());
+                openStoreEditor(id);
+            };
+
+            const grid = container.querySelector("#storesGrid");
+            const ids = Object.keys(STORES).sort((a, b) => (STORES[a].name || "").localeCompare(STORES[b].name || ""));
+
+            if (ids.length === 0) {
+                const p = document.createElement("p");
+                p.style.color = "#64748b";
+                p.style.margin = "4px 0 0";
+                p.textContent = "Nog geen winkels. Voeg er één toe.";
+                grid.appendChild(p);
+                return;
+            }
+
+            ids.forEach((id) => {
+                const s = STORES[id];
+
+                const card = document.createElement("div");
+                card.className = "store-card";
+
+                const head = document.createElement("header");
+                const title = document.createElement("strong");
+                title.textContent = s.name || "Onbenoemd";
+
+                const right = document.createElement("div");
+                right.style.display = "flex";
+                right.style.gap = "8px";
+
+                const badge = document.createElement("span");
+                badge.className = "badge";
+                badge.textContent = (s.order?.length || 0) + " categorieën";
+
+                const activeBadge = document.createElement("span");
+                activeBadge.className = "badge";
+                activeBadge.style.background = activeStoreId === id ? "#dcfce7" : "#eef2ff";
+                activeBadge.textContent = activeStoreId === id ? "Actief" : "Niet actief";
+
+                right.append(badge, activeBadge);
+                head.append(title, right);
+
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                const setActive = document.createElement("button");
+                setActive.className = "btn ghost";
+                setActive.textContent = activeStoreId === id ? "Deactiveer" : "Maak actief";
+                setActive.onclick = async (e) => {
+                    const btn = e.currentTarget;
+                    const targetId = activeStoreId === id ? null : id;
+
+                    // Optimistic UI
+                    const prevActive = activeStoreId;
+                    activeStoreId = targetId;
+                    renderStoresPage();
+                    renderList();
+
+                    // Busy state
+                    btn.disabled = true;
+                    btn.setAttribute("aria-busy", "true");
+                    const origLabel = btn.textContent;
+                    btn.textContent = "Bezig…";
+
+                    try {
+                        await setActiveStore(targetId);
+                        toast(targetId ? "Winkel actief" : "Winkel gedeactiveerd");
+                    } catch (err) {
+                        console.error("setActiveStore failed", err);
+                        activeStoreId = prevActive;
+                        renderStoresPage();
+                        renderList();
+                        alert("Kon actieve winkel niet opslaan: " + (err.message || err));
+                    } finally {
+                        btn.disabled = false;
+                        btn.removeAttribute("aria-busy");
+                        btn.textContent = origLabel;
+                    }
+                }; // <- keep this brace!
+
+                const edit = document.createElement("button");
+                edit.className = "btn ghost";
+                edit.textContent = "Bewerken";
+                edit.onclick = () => openStoreEditor(id);
+
+                const del = document.createElement("button");
+                del.className = "btn danger";
+                del.textContent = "Verwijderen";
+                del.onclick = async () => {
+                    if (confirm(`Winkel "${s.name || "zonder naam"}" verwijderen?`)) {
+                        await deleteStore(id);
+                    }
+                };
+
+                actions.append(setActive, edit, del);
+                card.append(head, actions);
+                grid.appendChild(card);
+            });
+        }
+
+        /* --- Store Editor (simple up/down reorder) --- */
+        function openStoreEditor(id) {
+            const s = STORES[id];
+            if (!s) {
+                alert("Winkel niet gevonden");
+                return;
+            }
+
+            // Build a lightweight modal using <dialog> (reuse recipe dialog styling)
+            const dlg = document.createElement("dialog");
+            dlg.id = `storeDlg-${id}`;
+            dlg.style.border = "none";
+            dlg.style.borderRadius = "12px";
+            dlg.style.padding = "16px";
+            dlg.style.width = "90%";
+            dlg.style.maxWidth = "520px";
+
+            dlg.innerHTML = `
+<form method="dialog" class="recipe-form">
+<h3 style="margin:0 0 8px;">Winkel bewerken</h3>
+<input id="storeName" type="text" placeholder="Naam" value="${(s.name || "").replace(/"/g, "&quot;")}"/>
+<div style="font-weight:600; margin-top:6px;">Categorievolgorde</div>
+<div id="orderList" style="display:grid; gap:6px; max-height:260px; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; padding:8px; background:#fff;"></div>
+<div class="recipe-dialog-actions">
+<button value="cancel" type="button" class="btn ghost" id="storeCancel">Annuleren</button>
+<button value="ok" class="btn primary" id="storeSave">Opslaan</button>
+</div>
+</form>
+`;
+
+            document.body.appendChild(dlg);
+
+            const nameInput = dlg.querySelector("#storeName");
+            const listEl = dlg.querySelector("#orderList");
+
+            // working copy of order (fallback to global if missing)
+            let order = Array.isArray(s.order) && s.order.length ? [...s.order] : [...sectionOrder];
+
+            function renderOrder() {
+                listEl.innerHTML = "";
+                order.forEach((sec, idx) => {
+                    const row = document.createElement("div");
+                    row.style.display = "grid";
+                    row.style.gridTemplateColumns = "1fr auto auto";
+                    row.style.alignItems = "center";
+                    row.style.gap = "6px";
+
+                    const label = document.createElement("div");
+                    label.textContent = sec;
+
+                    const up = document.createElement("button");
+                    up.type = "button";
+                    up.className = "btn ghost";
+                    up.textContent = "▲";
+                    up.disabled = idx === 0;
+                    up.onclick = () => {
+                        [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
+                        renderOrder();
+                    };
+
+                    const down = document.createElement("button");
+                    down.type = "button";
+                    down.className = "btn ghost";
+                    down.textContent = "▼";
+                    down.disabled = idx === order.length - 1;
+                    down.onclick = () => {
+                        [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
+                        renderOrder();
+                    };
+
+                    row.append(label, up, down);
+                    listEl.appendChild(row);
+                });
+            }
+            renderOrder();
+
+            dlg.querySelector("#storeCancel").onclick = () => {
+                dlg.close();
+                dlg.remove();
+            };
+            dlg.querySelector("#storeSave").onclick = async (e) => {
+                e.preventDefault();
+                const name = (nameInput.value || "").trim() || "Winkel";
+                await updateStore(id, { name, order });
+                dlg.close();
+                dlg.remove();
+            };
+
+            dlg.showModal();
+        }
+
+        // Helpers
+        function parseItems(raw) {
+            return Array.from(
+                new Set(
+                    (raw || "")
+                        .split(/[\n,]+/)
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                )
+            );
+        }
+        function currentSectionOrder() {
+            const s = activeStoreId && STORES[activeStoreId];
+            const order = s && Array.isArray(s.order) && s.order.length ? s.order : sectionOrder;
+            return order;
+        }
+
+        async function createStore(name) {
+            const payload = {
+                name: name.trim(),
+                order: [...sectionOrder],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            };
+            const ref = await storesCol.add(payload);
+            return ref.id;
+        }
+        async function updateStore(id, patch) {
+            await storesCol.doc(id).set({ ...patch, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }
+        async function deleteStore(id) {
+            await storesCol.doc(id).delete();
+            if (activeStoreId === id) {
+                await stateDoc.set({ activeStoreId: firebase.firestore.FieldValue.delete() }, { merge: true });
+            }
+        }
+        async function setActiveStore(id) {
+            await stateDoc.set({ activeStoreId: id || firebase.firestore.FieldValue.delete() }, { merge: true });
+        }
+
+        function toast(msg, ms = 1400) {
+            let t = document.createElement("div");
+            t.textContent = msg;
+            Object.assign(t.style, {
+                position: "fixed",
+                left: "50%",
+                bottom: "70px",
+                transform: "translateX(-50%)",
+                background: "rgba(17,24,39,.92)",
+                color: "#fff",
+                padding: "8px 12px",
+                borderRadius: "10px",
+                fontSize: ".9rem",
+                zIndex: 9999,
+            });
+            document.body.appendChild(t);
+            setTimeout(() => {
+                t.remove();
+            }, ms);
+        }
+
+        // Autosuggest for ingredients (based on last token)
+        recipeItemsInput.addEventListener("input", () => {
+            const { token, start, end } = getLastToken(recipeItemsInput.value);
+            ingSuggestionsBox.innerHTML = "";
+            if (!token) return;
+
+            const existing = new Set(parseItems(recipeItemsInput.value));
+            const matches = suggestMatches(
+                token,
+                KNOWN_ITEMS.filter((x) => !existing.has(x)),
+                8
+            );
+            matches.forEach((name) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.textContent = name + " · " + inferSection(name);
+                b.onclick = () => {
+                    const before = recipeItemsInput.value.slice(0, start);
+                    const after = recipeItemsInput.value.slice(end);
+                    const inserted = name;
+                    recipeItemsInput.value = before + inserted + (after.startsWith("\n") || after.startsWith(",") || after === "" ? "" : ", ") + after;
+                    recipeItemsInput.dispatchEvent(new Event("input"));
+                    recipeItemsInput.focus();
+                };
+                ingSuggestionsBox.appendChild(b);
+            });
+        });
+        function getLastToken(text) {
+            const i = Math.max(text.lastIndexOf("\n"), text.lastIndexOf(","));
+            const start = i === -1 ? 0 : i + 1;
+            const end = text.length;
+            const token = text.slice(start, end).trim();
+            return { token, start, end };
+        }
+        /* --- Build unified floating tray for actions --- */
+        (function unifyFloatingActions() {
+            const fab = document.getElementById("fabAdd");
+            const clear = document.getElementById("clearListBtn");
+            if (!fab || !clear) return;
+
+            // Accessibility labels
+            fab.setAttribute("aria-label", "Item toevoegen");
+            clear.setAttribute("aria-label", "Lijst leegmaken");
+
+            // Create tray and move buttons inside
+            const tray = document.createElement("div");
+            tray.className = "fab-tray";
+            tray.id = "fabTray";
+            tray.appendChild(fab);
+            tray.appendChild(clear);
+            document.body.appendChild(tray);
+        })();
+
+        /* ---------- Init ---------- */
+        renderMeals();
+        renderWeeklies();
         updateCounter();
-        renderRecipesPage(); // badge states
-      }, err => console.error("onSnapshot state error", err));
-    
-      // Custom recipes live
-      recipesCol.orderBy('name').onSnapshot(snap => {
-        const map = {};
-        snap.docs.forEach(d => {
-          const data = d.data() || {};
-          const name = (data.name || "").trim();
-          if(!name) return;
-          map[name] = { id: d.id, items: Array.isArray(data.items) ? data.items : [] };
-        });
-        customRecipeDocs = map;
-        recomputeCombinedMeals();       // pills + recipes detail share this
-      }, err => console.error("recipes onSnapshot error", err));
-
-      // Stores live
-      storesCol.orderBy('name').onSnapshot(snap => {
-        const map = {};
-        snap.forEach(d => map[d.id] = { id: d.id, ...(d.data() || {}) });
-        STORES = map;
-        renderStoresPage();   // update Shops tab
-        renderList();         // re-sort list if needed
-      });
-
-      // uiState live (extend your existing stateDoc.onSnapshot handler)
-      stateDoc.onSnapshot(doc => {
-        const d = doc.data() || {};
-        activeStoreId = d.activeStoreId || null;
-        reflectActiveStoreBadge();
-        renderList();
-      }, err => console.error("onSnapshot state error (stores)", err));
-    });
-    
-    /* ---------- Cloud writes ---------- */
-    async function cloudAddItem(name, section, origin){
-      try {
-        const id = slug(name);
-        await itemsCol.doc(id).set({
-          name, section,
-          count: inc(1),
-          origins: arrAdd(origin),
-          checked: false,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge:true });
-      } catch (err) {
-        console.error("cloudAddItem failed", err);
-        alert("Kon item niet toevoegen: " + err.message);
-      }
-    }
-    async function cloudRemoveItem(name, origin){
-      const id = slug(name);
-      await db.runTransaction(async tx => {
-        const ref = itemsCol.doc(id);
-        const snap = await tx.get(ref);
-        if(!snap.exists) return;
-        const data = snap.data();
-        const newCount = (data.count || 0) - 1;
-        if(newCount <= 0) tx.delete(ref);
-        else tx.update(ref, { count: newCount, origins: arrDel(origin) });
-      });
-    }
-    async function cloudToggleChecked(name, checked){
-      await itemsCol.doc(slug(name)).set({ checked }, { merge:true });
-    }
-    async function saveMealState(){
-      try { await stateDoc.set({ activeMeals: Array.from(activeMeals) }, { merge: true }); }
-      catch (e) { console.error("saveMealState failed", e); }
-    }
-    async function cloudClearList(){
-      const snap = await itemsCol.get();
-      const batch = db.batch();
-      snap.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
-      activeMeals = new Set();
-      await saveMealState();
-    }
-    
-    /* ---------- Meals dataset = built-ins + customs ---------- */
-    function recomputeCombinedMeals(){
-      combinedMeals = { ...mealData };
-      Object.entries(customRecipeDocs).forEach(([name, doc]) => {
-        combinedMeals[name] = doc.items || [];
-      });
-      refreshKnownItems();
-      renderMeals();
-      renderRecipesPage();
-    }
-    
-    /* ---------- Meals UI (pills) ---------- */
-    function renderMeals(){
-      const row = document.getElementById("mealRow");
-      row.innerHTML = "";
-    
-      // sort by name; keep built-ins first? -> simple alpha for now
-      const names = Object.keys(combinedMeals).sort((a,b)=>a.localeCompare(b));
-    
-      names.forEach(meal => {
-        const btn = document.createElement("button");
-        btn.textContent = meal;
-        btn.dataset.meal = meal;
-        btn.classList.toggle("active", activeMeals.has(meal));
-        btn.onclick = async () => {
-          const willActivate = !btn.classList.contains("active");
-          const items = combinedMeals[meal] || [];
-          if(willActivate){
-            activeMeals.add(meal);
-            for(const item of items){
-              const sec = inferSection(item);
-              cloudAddItem(item, sec, meal);
-            }
-          }else{
-            activeMeals.delete(meal);
-            for(const item of items){
-              cloudRemoveItem(item, meal);
-            }
-          }
-          btn.classList.toggle("active", willActivate);
-          updateCounter();
-          await saveMealState();
-          renderRecipesPage(); // keep badges in sync
-        };
-        row.appendChild(btn);
-      });
-    }
-    function reflectMealPillsFromState(){
-      const row = document.getElementById("mealRow");
-      if(!row) return;
-      row.querySelectorAll("button[data-meal]").forEach(btn => {
-        const meal = btn.dataset.meal;
-        btn.classList.toggle("active", activeMeals.has(meal));
-      });
-    }
-    
-    /* ---------- Weeklies Accordion UI (unchanged) ---------- */
-    function renderWeeklies(){
-      const container = document.getElementById("weeklyAccordion");
-      container.innerHTML = "";
-      Object.keys(weeklyGroupsData).forEach(group => {
-        const card = document.createElement("div");
-        card.className = "weekly-group";
-        card.dataset.group = group;
-    
-        const header = document.createElement("button");
-        header.className = "weekly-group__header";
-        header.onclick = () => toggleWeeklyGroupAccordion(group);
-    
-        const titleWrap = document.createElement("span");
-        titleWrap.className = "weekly-group__title";
-    
-        const chev = document.createElement("span");
-        chev.className = "weekly-group__chev";
-        chev.textContent = "►";
-    
-        const title = document.createElement("span");
-        title.textContent = group;
-    
-        titleWrap.append(chev, title);
-    
-        const badge = document.createElement("span");
-        badge.className = "weekly-group__badge";
-        badge.textContent = "0 geselecteerd";
-    
-        header.append(titleWrap, badge);
-    
-        const content = document.createElement("div");
-        content.className = "weekly-group__content";
-        content.id = `group-${group}`;
-    
-        weeklyGroupsData[group].forEach(item => {
-          const b = document.createElement("button");
-          b.textContent = item;
-          b.dataset.item = item;
-          b.onclick = () => {
-            const active = b.classList.toggle("active");
-            if(active){
-              const sec = inferSection(item);
-              cloudAddItem(item, sec, group);
-            }else{
-              cloudRemoveItem(item, group);
-            }
-            updateWeeklyBadge(group);
-          };
-          content.appendChild(b);
-        });
-    
-        card.append(header, content);
-        container.appendChild(card);
-        updateWeeklyBadge(group);
-      });
-      syncWeeklySelectionsFromCloud();
-    }
-    function toggleWeeklyGroupAccordion(groupName){
-      const cards = document.querySelectorAll(".weekly-group");
-      cards.forEach(card => {
-        const header = card.querySelector(".weekly-group__header");
-        const chev = card.querySelector(".weekly-group__chev");
-        const isTarget = card.dataset.group === groupName;
-        if(isTarget){
-          const willOpen = !card.classList.contains("open");
-          card.classList.toggle("open", willOpen);
-          chev.textContent = willOpen ? "▼" : "►";
-          header.classList.toggle("active", willOpen);
-          if(willOpen) card.scrollIntoView({ behavior:"smooth", block:"start" });
-        }else{
-          card.classList.remove("open");
-          header.classList.remove("active");
-          const otherChev = card.querySelector(".weekly-group__chev");
-          if(otherChev) otherChev.textContent = "►";
-        }
-      });
-    }
-    function updateWeeklyBadge(groupName){
-      const count = Object.entries(activeItems)
-        .filter(([_, data]) => data.sources.has(groupName))
-        .length;
-      const card = document.querySelector(`.weekly-group[data-group="${CSS.escape(groupName)}"]`);
-      if(!card) return;
-      const badge = card.querySelector(".weekly-group__badge");
-      badge.textContent = count === 1 ? "1 geselecteerd" : `${count} geselecteerd`;
-    }
-    function updateAllWeeklyBadges(){
-      Object.keys(weeklyGroupsData).forEach(updateWeeklyBadge);
-    }
-    function syncWeeklySelectionsFromCloud(){
-      Object.keys(weeklyGroupsData).forEach(group => {
-        const content = document.getElementById(`group-${group}`);
-        if(!content) return;
-        content.querySelectorAll("button").forEach(btn => {
-          const item = btn.dataset.item;
-          const cloud = activeItems[item];
-          const shouldBeActive = !!(cloud && cloud.sources.has(group));
-          btn.classList.toggle("active", shouldBeActive);
-        });
-        updateWeeklyBadge(group);
-      });
-      updateWeeklyHeaderCounter();
-    }
-    
-    /* ---------- Shopping list ---------- */
-    function updateCounter(){
-      const el = document.getElementById("mealCounter");
-      if(!el) return;
-      const n = activeMeals.size;
-      el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
-    }
-    function updateWeeklyHeaderCounter(){
-      const el = document.getElementById("weeklyCounter");
-      if(!el) return;
-      const weeklyGroups = new Set(Object.keys(weeklyGroupsData));
-      let count = 0;
-      for (const data of Object.values(activeItems)) {
-        const hasWeeklySource = [...data.sources].some(src => weeklyGroups.has(src));
-        if (hasWeeklySource) count++;
-      }
-      el.textContent = count === 1 ? "1 item" : `${count} items`;
-    }
-    function setActiveFromCloud(cloudDocs){
-      activeItems = {};
-      cloudDocs.forEach(d => {
-        activeItems[d.name] = {
-          count: d.count || 1,
-          sources: new Set(d.origins || []),
-          checked: !!d.checked
-        };
-      });
-      refreshKnownItems();
-      renderList();
-      syncWeeklySelectionsFromCloud();
-      updateAllWeeklyBadges();
-      updateWeeklyHeaderCounter();
-    }
-    function renderList(){
-      const ul = document.getElementById("shoppingList");
-      ul.innerHTML = "";
-      currentSectionOrder().forEach(section => {
-        const items = Object.keys(activeItems).filter(i => (itemToSection[i] || "Eigen") === section);
-        if(items.length > 0){
-          const header = document.createElement("li");
-          header.className = "section-header";
-          header.textContent = section;
-          ul.appendChild(header);
-          items.forEach(name => {
-            const data = activeItems[name];
-            const li = document.createElement("li");
-            const label = data.count > 1 ? `${name} (${data.count}x)` : name;
-            const span = document.createElement("span");
-            span.textContent = label;
-            const small = document.createElement("small");
-            small.textContent = Array.from(data.sources).join(", ");
-            li.append(span, small);
-            li.classList.toggle("crossed", !!data.checked);
-            li.onclick = () => cloudToggleChecked(name, !li.classList.contains("crossed"));
-            ul.appendChild(li);
-          });
-        }
-      });
-    }
-    
-    /* ---------- UI state for details sections (unchanged) ---------- */
-    const mealsDetails    = document.getElementById('sec-meals');
-    const weekliesDetails = document.getElementById('sec-weeklies');
-    if (localStorage.getItem('sec-weeklies-open') === null && window.innerWidth < 768) {
-      weekliesDetails.removeAttribute('open');
-    }
-    const s1 = localStorage.getItem('sec-meals-open');
-    if (s1 !== null) mealsDetails.toggleAttribute('open', s1 === 'true');
-    const s2 = localStorage.getItem('sec-weeklies-open');
-    if (s2 !== null) weekliesDetails.toggleAttribute('open', s2 === 'true');
-    function wireDetails(detailsEl) {
-      const summary = detailsEl.querySelector('summary .section__chev');
-      const update = () => { if (summary) summary.textContent = detailsEl.open ? '▼' : '►'; };
-      update();
-      detailsEl.addEventListener('toggle', () => {
-        update();
-        const key = detailsEl.id + '-open';
-        localStorage.setItem(key, String(detailsEl.open));
-      });
-    }
-    wireDetails(mealsDetails);
-    wireDetails(weekliesDetails);
-    
-    /* ---------- Clear list ---------- */
-    document.getElementById("clearListBtn").addEventListener("click", async () => {
-      await cloudClearList();
-      document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".weekly-group").forEach(card => {
-        card.classList.remove("open");
-        card.querySelector(".weekly-group__header").classList.remove("active");
-        card.querySelector(".weekly-group__chev").textContent = "►";
-      });
-      updateCounter();
-    });
-    
-    /* ---------- Tabs / Hash Router (unchanged) ---------- */
-    (function(){
-      const TABS = ["list","recipes","stores"];
-      const DEFAULT_TAB = "list";
-      const STORAGE_KEY = "ui-active-tab";
-    
-      const pages = {
-        list:    document.getElementById("tab-list"),
-        recipes: document.getElementById("tab-recipes"),
-        stores:  document.getElementById("tab-stores"),
-      };
-      const buttons = {
-        list:    document.getElementById("tabbtn-list"),
-        recipes: document.getElementById("tabbtn-recipes"),
-        stores:  document.getElementById("tabbtn-stores"),
-      };
-    
-      function setActive(name){
-        Object.entries(pages).forEach(([k,el]) => el.classList.toggle("active", k===name));
-        Object.entries(buttons).forEach(([k,btn]) => {
-          const isActive = k===name;
-          btn.classList.toggle("active", isActive);
-          btn.setAttribute("aria-selected", String(isActive));
-          btn.setAttribute("tabindex", isActive ? "0" : "-1");
-        });
-        localStorage.setItem(STORAGE_KEY, name);
-      }
-      function normalize(hash){
-        const key = (hash || "").replace(/^#/, "");
-        return ["list","recipes","stores"].includes(key) ? key : null;
-      }
-      function syncFromHash(){
-        const byHash = normalize(location.hash);
-        const remembered = localStorage.getItem(STORAGE_KEY);
-        const target = byHash || (["list","recipes","stores"].includes(remembered) ? remembered : DEFAULT_TAB);
-        if (!byHash) history.replaceState(null, "", "#" + target);
-        setActive(target);
-      }
-      Object.entries(buttons).forEach(([name,btn]) => {
-        btn.addEventListener("click", () => {
-          if (location.hash !== "#" + name) location.hash = name;
-          else setActive(name);
-        });
-      });
-      window.addEventListener("hashchange", syncFromHash);
-      syncFromHash();
-    })();
-    
-    /* ---------- Add item FAB + dialog (unchanged) ---------- */
-    const fab        = document.getElementById("fabAdd");
-    const dlg        = document.getElementById("addDialog");
-    const addInput   = document.getElementById("addInput");
-    const addConfirm = document.getElementById("addConfirm");
-    const addCancel  = document.getElementById("addCancel");
-    const suggBox    = document.getElementById("suggestions");
-    
-    function refreshKnownItemsAndClearDialog(){
-      refreshKnownItems();
-      suggBox.innerHTML = "";
-      addInput.value = "";
-    }
-    
-    fab.addEventListener("click", () => {
-      refreshKnownItemsAndClearDialog();
-      dlg.showModal();
-      setTimeout(()=> addInput.focus(), 0);
-    });
-    addCancel.addEventListener("click", () => dlg.close());
-    addInput.addEventListener("input", () => {
-      const q = addInput.value;
-      const matches = suggestMatches(q, KNOWN_ITEMS);
-      suggBox.innerHTML = "";
-      matches.forEach(name => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.textContent = name + " · " + inferSection(name);
-        b.addEventListener("click", async () => {
-          await addName(name);
-          addInput.value = ""; dlg.close();
-        });
-        suggBox.appendChild(b);
-      });
-    });
-    addInput.addEventListener("keydown", async (e) => {
-      if(e.key === "Enter"){
-        e.preventDefault();
-        if(!addInput.value.trim()) return;
-        await addName(addInput.value.trim());
-        addInput.value = "";
-        dlg.close();
-      }
-    });
-    addConfirm.addEventListener("click", async (e) => {
-      e.preventDefault();
-      if(!addInput.value.trim()) return;
-      await addName(addInput.value.trim());
-      addInput.value = "";
-      dlg.close();
-    });
-    async function addName(name){
-      const sec = inferSection(name);
-      await cloudAddItem(name, sec, "Eigen");
-    }
-    
-    /* ---------- Recipes tab: detail view + CRUD (custom only) ---------- */
-    const recipesListEl     = document.getElementById('recipesList');
-    const newRecipeBtn      = document.getElementById('newRecipeBtn');
-    const recipeDialog      = document.getElementById('recipeDialog');
-    const recipeNameInput   = document.getElementById('recipeNameInput');
-    const recipeItemsInput  = document.getElementById('recipeItemsInput');
-    const recipeSaveBtn     = document.getElementById('recipeSaveBtn');
-    const recipeCancelBtn   = document.getElementById('recipeCancelBtn');
-    const recipeDeleteBtn   = document.getElementById('recipeDeleteBtn');
-    const ingSuggestionsBox = document.getElementById('ingSuggestions');
-    
-    let editingRecipeId   = null;   // existing doc id when editing
-    let editingIsNew      = true;   // new vs edit
-    
-    newRecipeBtn.addEventListener('click', () => openRecipeDialog(null));
-    
-    function renderRecipesPage(){
-      // Render detail cards for combinedMeals (built-ins + customs)
-      if(!recipesListEl) return;
-      recipesListEl.innerHTML = "";
-    
-      const names = Object.keys(combinedMeals).sort((a,b)=>a.localeCompare(b));
-      if(names.length === 0){
-        const p = document.createElement('p');
-        p.style.color = '#64748b';
-        p.style.padding = '0 16px 16px';
-        p.textContent = "Nog geen recepten.";
-        recipesListEl.appendChild(p);
-        return;
-      }
-    
-      names.forEach(name => {
-        const items = combinedMeals[name] || [];
-        const isCustom = !!customRecipeDocs[name];
-        const isActive = activeMeals.has(name);
-    
-        const card = document.createElement('div');
-        card.className = 'recipe-card';
-    
-        const header = document.createElement('header');
-        const title  = document.createElement('strong'); title.textContent = name;
-        const right  = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-    
-        const badgeCount = document.createElement('span');
-        badgeCount.className = 'badge';
-        badgeCount.textContent = `${items.length} items`;
-    
-        const badgeSel = document.createElement('span');
-        badgeSel.className = 'badge';
-        badgeSel.style.background = isActive ? '#dcfce7' : '#eef2ff';
-        badgeSel.textContent = isActive ? 'Geselecteerd' : 'Niet geselecteerd';
-    
-        right.append(badgeCount, badgeSel);
-        header.append(title, right);
-    
-        const tags = document.createElement('div');
-        tags.className = 'tags';
-        items.slice(0, 24).forEach(i => {
-          const t = document.createElement('span'); t.textContent = i; tags.appendChild(t);
-        });
-    
-        const actions = document.createElement('div');
-        actions.className = 'actions';
-    
-        if(isCustom){
-          const editBtn = document.createElement('button');
-          editBtn.className = 'btn ghost'; editBtn.textContent = 'Bewerken';
-          editBtn.onclick = () => openRecipeDialog({ name, ...customRecipeDocs[name] });
-    
-          const delBtn = document.createElement('button');
-          delBtn.className = 'btn danger'; delBtn.textContent = 'Verwijderen';
-          delBtn.onclick = async () => {
-            if(!confirm(`Recept "${name}" verwijderen?`)) return;
-            // If it is currently active, remove its items first to keep counts correct
-            if(activeMeals.has(name)){
-              for(const item of items){ await cloudRemoveItem(item, name); }
-              activeMeals.delete(name);
-              await saveMealState();
-              reflectMealPillsFromState();
-              updateCounter();
-            }
-            await recipesCol.doc(customRecipeDocs[name].id).delete();
-            // onSnapshot will refresh combinedMeals and UI
-          };
-    
-          actions.append(editBtn, delBtn);
-        } else {
-          const ro = document.createElement('small');
-          ro.style.color = '#64748b';
-          ro.textContent = 'Standaard recept';
-          actions.append(ro);
-        }
-    
-        card.append(header, tags, actions);
-        recipesListEl.appendChild(card);
-      });
-    }
-    
-    // Dialog open/close
-    function openRecipeDialog(recipe){
-      editingIsNew    = !recipe;
-      editingRecipeId = recipe ? recipe.id : null;
-    
-      recipeNameInput.value  = recipe ? (recipe.name || '') : '';
-      recipeItemsInput.value = recipe ? (recipe.items || []).join('\n') : '';
-    
-      // Editing existing: lock name to avoid origin mismatches in current list logic
-      recipeNameInput.disabled = !!recipe;
-      recipeDeleteBtn.style.display = recipe ? 'inline-block' : 'none';
-    
-      ingSuggestionsBox.innerHTML = "";
-      recipeDialog.showModal();
-      setTimeout(() => (recipe ? recipeItemsInput : recipeNameInput).focus(), 0);
-    }
-    recipeCancelBtn.addEventListener('click', () => recipeDialog.close());
-    
-    // Delete inside dialog (same as card delete)
-    recipeDeleteBtn.addEventListener('click', async () => {
-      if(!editingRecipeId) return;
-      const name = recipeNameInput.value || 'recept';
-      if(confirm(`Verwijder "${name}"?`)){
-        // If active: remove its items and unselect
-        if(activeMeals.has(name)){
-          const items = combinedMeals[name] || [];
-          for(const it of items){ await cloudRemoveItem(it, name); }
-          activeMeals.delete(name);
-          await saveMealState();
-          reflectMealPillsFromState();
-          updateCounter();
-        }
-        await recipesCol.doc(editingRecipeId).delete();
-        recipeDialog.close();
-      }
-    });
-    
-    // Save (create or update ingreds)
-    recipeSaveBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-    
-      const name = (recipeNameInput.value || '').trim();
-      const items = parseItems(recipeItemsInput.value);
-    
-      if(editingIsNew && !name){ alert("Geef een naam."); return; }
-      if(items.length === 0){ alert("Voeg minimaal één ingrediënt toe."); return; }
-    
-      const payload = {
-        name,
-        items,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        ...(editingIsNew ? { createdAt: firebase.firestore.FieldValue.serverTimestamp() } : {})
-      };
-    
-      try {
-        if(editingIsNew){
-          const id = slug(name) || ("r-" + Date.now());
-          await recipesCol.doc(id).set(payload, { merge:true });
-        } else {
-          // Only update items for existing recipe (name locked)
-          await recipesCol.doc(editingRecipeId).set({ items, updatedAt: payload.updatedAt }, { merge:true });
-          // If recipe is active, we need to sync list deltas? For simplicity, we do not auto-diff:
-          // user can toggle pill off/on to refresh quantities if needed.
-        }
-        recipeDialog.close();
-      } catch (err) {
-        console.error("save recipe failed", err);
-        alert("Opslaan mislukt: " + err.message);
-      }
-    });
-    
-    /* ---------- Shops tab UI ---------- */
-    function reflectActiveStoreBadge(){
-      // Optional: show active store name in List tab header badge or somewhere subtle
-      // (keep minimal for MVP)
-    }
-
-    function renderStoresPage(){
-  const container = document.getElementById('tab-stores');
-  if(!container) return;
-
-  container.innerHTML = `
-    <div class="stores-wrap">
-      <div class="stores-header">
-        <h2>🏬 Winkels</h2>
-        <button id="storeAddBtn" class="btn primary sm">Nieuwe winkel</button>
-      </div>
-      <div id="storesGrid" class="stores-grid"></div>
-    </div>
-  `;
-
-  const addBtn = container.querySelector('#storeAddBtn');
-  addBtn.onclick = async () => {
-    const name = prompt('Naam van de winkel (bijv. Jumbo, AH XL)?');
-    if(!name || !name.trim()) return;
-    const id = await createStore(name.trim());
-    openStoreEditor(id);
-  };
-
-  const grid = container.querySelector('#storesGrid');
-  const ids = Object.keys(STORES).sort((a,b) => (STORES[a].name||'').localeCompare(STORES[b].name||''));
-
-  if(ids.length === 0){
-    const p = document.createElement('p');
-    p.style.color = '#64748b'; p.style.margin = '4px 0 0';
-    p.textContent = 'Nog geen winkels. Voeg er één toe.';
-    grid.appendChild(p);
-    return;
-  }
-
-  ids.forEach(id => {
-    const s = STORES[id];
-
-    const card = document.createElement('div');
-    card.className = 'store-card';
-
-    const head = document.createElement('header');
-    const title = document.createElement('strong');
-    title.textContent = s.name || 'Onbenoemd';
-
-    const right = document.createElement('div');
-    right.style.display='flex'; right.style.gap='8px';
-
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = (s.order?.length || 0) + ' categorieën';
-
-    const activeBadge = document.createElement('span');
-    activeBadge.className = 'badge';
-    activeBadge.style.background = (activeStoreId===id) ? '#dcfce7' : '#eef2ff';
-    activeBadge.textContent = (activeStoreId===id) ? 'Actief' : 'Niet actief';
-
-    right.append(badge, activeBadge);
-    head.append(title, right);
-
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-
-    const setActive = document.createElement('button');
-    setActive.className = 'btn ghost';
-    setActive.textContent = (activeStoreId===id) ? 'Deactiveer' : 'Maak actief';
-    setActive.onclick = async (e) => {
-      const btn = e.currentTarget;
-      const targetId = (activeStoreId===id) ? null : id;
-
-      // Optimistic UI
-      const prevActive = activeStoreId;
-      activeStoreId = targetId;
-      renderStoresPage();
-      renderList();
-
-      // Busy state
-      btn.disabled = true;
-      btn.setAttribute('aria-busy','true');
-      const origLabel = btn.textContent;
-      btn.textContent = 'Bezig…';
-
-      try {
-        await setActiveStore(targetId);
-        toast(targetId ? 'Winkel actief' : 'Winkel gedeactiveerd');
-      } catch (err) {
-        console.error('setActiveStore failed', err);
-        activeStoreId = prevActive;
-        renderStoresPage();
-        renderList();
-        alert('Kon actieve winkel niet opslaan: ' + (err.message || err));
-      } finally {
-        btn.disabled = false;
-        btn.removeAttribute('aria-busy');
-        btn.textContent = origLabel;
-      }
-    }; // <- keep this brace!
-
-    const edit = document.createElement('button');
-    edit.className = 'btn ghost'; edit.textContent = 'Bewerken';
-    edit.onclick = () => openStoreEditor(id);
-
-    const del = document.createElement('button');
-    del.className = 'btn danger'; del.textContent = 'Verwijderen';
-    del.onclick = async () => {
-      if(confirm(`Winkel "${s.name || 'zonder naam'}" verwijderen?`)){
-        await deleteStore(id);
-      }
-    };
-
-    actions.append(setActive, edit, del);
-    card.append(head, actions);
-    grid.appendChild(card);
-  });
-}
-
-    /* --- Store Editor (simple up/down reorder) --- */
-    function openStoreEditor(id){
-  const s = STORES[id];
-  if(!s){ alert('Winkel niet gevonden'); return; }
-
-  // Build a lightweight modal using <dialog> (reuse recipe dialog styling)
-  const dlg = document.createElement('dialog');
-  dlg.id = `storeDlg-${id}`;
-  dlg.style.border = 'none'; dlg.style.borderRadius = '12px'; dlg.style.padding = '16px'; dlg.style.width='90%'; dlg.style.maxWidth='520px';
-
-  dlg.innerHTML = `
-    <form method="dialog" class="recipe-form">
-      <h3 style="margin:0 0 8px;">Winkel bewerken</h3>
-      <input id="storeName" type="text" placeholder="Naam" value="${(s.name||'').replace(/"/g,'&quot;')}"/>
-      <div style="font-weight:600; margin-top:6px;">Categorievolgorde</div>
-      <div id="orderList" style="display:grid; gap:6px; max-height:260px; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; padding:8px; background:#fff;"></div>
-      <div class="recipe-dialog-actions">
-        <button value="cancel" type="button" class="btn ghost" id="storeCancel">Annuleren</button>
-        <button value="ok" class="btn primary" id="storeSave">Opslaan</button>
-      </div>
-    </form>
-  `;
-
-  document.body.appendChild(dlg);
-
-  const nameInput = dlg.querySelector('#storeName');
-  const listEl = dlg.querySelector('#orderList');
-
-  // working copy of order (fallback to global if missing)
-  let order = Array.isArray(s.order) && s.order.length ? [...s.order] : [...sectionOrder];
-
-  function renderOrder(){
-    listEl.innerHTML = '';
-    order.forEach((sec, idx) => {
-      const row = document.createElement('div');
-      row.style.display='grid';
-      row.style.gridTemplateColumns='1fr auto auto';
-      row.style.alignItems='center';
-      row.style.gap='6px';
-
-      const label = document.createElement('div');
-      label.textContent = sec;
-
-      const up = document.createElement('button');
-      up.type='button'; up.className='btn ghost'; up.textContent='▲';
-      up.disabled = idx===0;
-      up.onclick = () => { [order[idx-1], order[idx]] = [order[idx], order[idx-1]]; renderOrder(); };
-
-      const down = document.createElement('button');
-      down.type='button'; down.className='btn ghost'; down.textContent='▼';
-      down.disabled = idx===order.length-1;
-      down.onclick = () => { [order[idx], order[idx+1]] = [order[idx+1], order[idx]]; renderOrder(); };
-
-      row.append(label, up, down);
-      listEl.appendChild(row);
-    });
-  }
-  renderOrder();
-
-  dlg.querySelector('#storeCancel').onclick = () => { dlg.close(); dlg.remove(); };
-  dlg.querySelector('#storeSave').onclick = async (e) => {
-    e.preventDefault();
-    const name = (nameInput.value || '').trim() || 'Winkel';
-    await updateStore(id, { name, order });
-    dlg.close(); dlg.remove();
-  };
-
-  dlg.showModal();
-}
-
-    // Helpers
-    function parseItems(raw){
-      return Array.from(new Set(
-        (raw || "")
-          .split(/[\n,]+/)
-          .map(s => s.trim())
-          .filter(Boolean)
-      ));
-    }
-    function currentSectionOrder(){
-      const s = activeStoreId && STORES[activeStoreId];
-      const order = (s && Array.isArray(s.order) && s.order.length) ? s.order : sectionOrder;
-      return order;
-    }
-
-    async function createStore(name){
-      const payload = {
-        name: name.trim(),
-        order: [...sectionOrder],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      const ref = await storesCol.add(payload);
-      return ref.id;
-    }
-    async function updateStore(id, patch){
-      await storesCol.doc(id).set(
-        { ...patch, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
-        { merge:true }
-      );
-    }
-    async function deleteStore(id){
-      await storesCol.doc(id).delete();
-      if (activeStoreId === id) {
-        await stateDoc.set({ activeStoreId: firebase.firestore.FieldValue.delete() }, { merge:true });
-      }
-    }
-    async function setActiveStore(id){
-      await stateDoc.set({ activeStoreId: id || firebase.firestore.FieldValue.delete() }, { merge:true });
-    }
-
-    function toast(msg, ms=1400){
-      let t = document.createElement('div');
-      t.textContent = msg;
-      Object.assign(t.style, {
-        position:'fixed', left:'50%', bottom:'70px', transform:'translateX(-50%)',
-        background:'rgba(17,24,39,.92)', color:'#fff', padding:'8px 12px',
-        borderRadius:'10px', fontSize:'.9rem', zIndex:9999
-      });
-      document.body.appendChild(t);
-      setTimeout(()=>{ t.remove(); }, ms);
-    }
-
-    // Autosuggest for ingredients (based on last token)
-    recipeItemsInput.addEventListener('input', () => {
-      const { token, start, end } = getLastToken(recipeItemsInput.value);
-      ingSuggestionsBox.innerHTML = "";
-      if(!token) return;
-    
-      const existing = new Set(parseItems(recipeItemsInput.value));
-      const matches = suggestMatches(token, KNOWN_ITEMS.filter(x => !existing.has(x)), 8);
-      matches.forEach(name => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = name + ' · ' + inferSection(name);
-        b.onclick = () => {
-          const before = recipeItemsInput.value.slice(0, start);
-          const after  = recipeItemsInput.value.slice(end);
-          const inserted = name;
-          recipeItemsInput.value = before + inserted + (after.startsWith('\n')||after.startsWith(',')||after==='' ? '' : ', ') + after;
-          recipeItemsInput.dispatchEvent(new Event('input'));
-          recipeItemsInput.focus();
-        };
-        ingSuggestionsBox.appendChild(b);
-      });
-    });
-    function getLastToken(text){
-      const i = Math.max(text.lastIndexOf('\n'), text.lastIndexOf(','));
-      const start = i === -1 ? 0 : i + 1;
-      const end   = text.length;
-      const token = text.slice(start, end).trim();
-      return { token, start, end };
-    }
-    
-    /* ---------- Init ---------- */
-    renderMeals();
-    renderWeeklies();
-    updateCounter();
-    </script>    
+    </script>
 </body>
 </html>
-
