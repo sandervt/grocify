@@ -696,7 +696,7 @@
     function renderList(){
       const ul = document.getElementById("shoppingList");
       ul.innerHTML = "";
-      curentSectionOrder.forEach(section => {
+      currentSectionOrder.forEach(section => {
         const items = Object.keys(activeItems).filter(i => (itemToSection[i] || "Eigen") === section);
         if(items.length > 0){
           const header = document.createElement("li");
@@ -1099,8 +1099,37 @@
           const setActive = document.createElement('button');
           setActive.className = 'btn ghost';
           setActive.textContent = (activeStoreId===id) ? 'Deactiveer' : 'Maak actief';
-          setActive.onclick = () => setActiveStore(activeStoreId===id ? null : id);
+          setActive.onclick = async (e) => {
+            const btn = e.currentTarget;
+            const targetId = (activeStoreId===id) ? null : id;
 
+            // Optimistic UI
+            const prevActive = activeStoreId;
+            activeStoreId = targetId;        // reflect immediately
+            renderStoresPage();
+            renderList();
+
+            // Disable & show busy state
+            btn.disabled = true;
+            btn.setAttribute('aria-busy','true');
+            const origLabel = btn.textContent;
+            btn.textContent = 'Bezig…';
+
+            try {
+              await setActiveStore(targetId);  // Firestore write
+              toast(targetId ? 'Winkel actief' : 'Winkel gedeactiveerd');
+            } catch (err) {
+              console.error('setActiveStore failed', err);
+              // revert optimistic state on error
+              activeStoreId = prevActive;
+              renderStoresPage();
+              renderList();
+              alert('Kon actieve winkel niet opslaan: ' + (err.message || err));
+            } finally {
+              btn.disabled = false;
+              btn.removeAttribute('aria-busy');
+              btn.textContent = origLabel;
+            }
           const edit = document.createElement('button');
           edit.className = 'btn ghost'; edit.textContent = 'Bewerken';
           edit.onclick = () => openStoreEditor(id);
@@ -1233,6 +1262,18 @@
     }
     async function setActiveStore(id){
       await stateDoc.set({ activeStoreId: id || firebase.firestore.FieldValue.delete() }, { merge:true });
+    }
+
+    function toast(msg, ms=1400){
+      let t = document.createElement('div');
+      t.textContent = msg;
+      Object.assign(t.style, {
+        position:'fixed', left:'50%', bottom:'70px', transform:'translateX(-50%)',
+        background:'rgba(17,24,39,.92)', color:'#fff', padding:'8px 12px',
+        borderRadius:'10px', fontSize:'.9rem', zIndex:9999
+      });
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.remove(); }, ms);
     }
 
     // Autosuggest for ingredients (based on last token)
