@@ -739,6 +739,18 @@
         .app {
             padding-bottom: 130px;
         }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
@@ -1980,17 +1992,26 @@
             const token = text.slice(start, end).trim();
             return { token, start, end };
         }
-        /* --- Build unified floating tray for actions --- */
+
+        /* --- Build unified floating tray for actions (icon-only) --- */
         (function unifyFloatingActions() {
             const fab = document.getElementById("fabAdd");
             const clear = document.getElementById("clearListBtn");
             if (!fab || !clear) return;
 
-            // Accessibility labels
-            fab.setAttribute("aria-label", "Item toevoegen");
-            clear.setAttribute("aria-label", "Lijst leegmaken");
+            // Labels for a11y + tooltips
+            const fabLabel = "Item toevoegen";
+            const clearLabel = "Lijst leegmaken";
 
-            // Create tray and move buttons inside
+            // Make them icon-only (no visible text overflow)
+            fab.innerHTML = '<span aria-hidden="true">＋</span><span class="sr-only">' + fabLabel + "</span>";
+            clear.innerHTML = '<span aria-hidden="true">🗑️</span><span class="sr-only">' + clearLabel + "</span>";
+            fab.setAttribute("aria-label", fabLabel);
+            clear.setAttribute("aria-label", clearLabel);
+            fab.setAttribute("title", fabLabel);
+            clear.setAttribute("title", clearLabel);
+
+            // Build centered tray and move buttons inside
             const tray = document.createElement("div");
             tray.className = "fab-tray";
             tray.id = "fabTray";
