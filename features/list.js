@@ -537,6 +537,7 @@ function wireDetailsSections(){
   refreshDraftChips();
 
   input.addEventListener("input", () => {
+    disarmAutoClose();
     refreshDraftChips();
     refreshSuggestions();
   });
@@ -554,7 +555,7 @@ function wireAddDialog(){
     ok.click();
   });
 
-    ok.addEventListener("click", async () => {
+ok.addEventListener("click", async () => {
     const raw = input.value.trim();
     if(!raw) return;
 
@@ -564,7 +565,12 @@ function wireAddDialog(){
 
     await addItemFromDraft({ ...draft, section: chosenSection });
 
-    // STEP-5: Offer Undo for the add
+    // STEP-7: announce + haptic + arm auto-close
+    announce(`Toegevoegd: ${draft.name}`);
+    if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+    armAutoClose(3000);
+
+    // STEP-5: Undo for add
     showUndo(`Toegevoegd: ${draft.name}`, async () => {
         try { await undoAddItem(draft.name, qty, "Eigen"); }
         catch(e){ console.error("Undo add failed", e); }
@@ -744,6 +750,30 @@ function showUndo(label, onUndo){
   if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
     window.GrocifyUndo.show(label, onUndo);
   }
+}
+
+// ===== STEP-7: a11y announcer + auto-close timer =====
+let __autoCloseTimer = null;
+
+function announce(msg){
+  const el = document.getElementById('ariaLive');
+  if (!el) return;
+  // Toggle text to retrigger SR announcement
+  el.textContent = '';
+  // small delay helps some SRs pick it up
+  setTimeout(() => { el.textContent = msg; }, 10);
+}
+
+function armAutoClose(ms = 3000){
+  clearTimeout(__autoCloseTimer);
+  __autoCloseTimer = setTimeout(() => {
+    document.dispatchEvent(new CustomEvent('composer:request-close'));
+  }, ms);
+}
+
+function disarmAutoClose(){
+  clearTimeout(__autoCloseTimer);
+  __autoCloseTimer = null;
 }
 
 // ===== STEP-6: Qty & delete helpers =====

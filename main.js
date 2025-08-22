@@ -91,12 +91,15 @@ const Composer = (() => {
   return { open, close, wire };
 })();
 
+// After Composer.wire() and the FAB binding from Step 2/3:
 document.addEventListener('DOMContentLoaded', () => {
   Composer.wire();
   const fab = document.getElementById('fabAdd');
   fab?.addEventListener('click', () => Composer.open());
-});
 
+  // STEP-7: allow other modules to request a close
+  document.addEventListener('composer:request-close', () => Composer.close());
+});
 
 function initRouter(){
   const TABS = ["list","recipes","stores"];
