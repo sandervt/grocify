@@ -493,21 +493,28 @@ function wireAddDialog(){
     ok.click();
   });
 
-  ok.addEventListener("click", async () => {
+    ok.addEventListener("click", async () => {
     const raw = input.value.trim();
     if(!raw) return;
 
     const draft = parseDraft(raw);
     const chosenSection = secSel()?.value || draft.section;
+    const qty = Math.max(1, Number(draft.qty) || 1);
 
     await addItemFromDraft({ ...draft, section: chosenSection });
 
-    pushRecent(draft.name); // remember for recents
+    // STEP-5: Offer Undo for the add
+    showUndo(`Toegevoegd: ${draft.name}`, async () => {
+        try { await undoAddItem(draft.name, qty, "Eigen"); }
+        catch(e){ console.error("Undo add failed", e); }
+    });
+
+    pushRecent(draft.name);
     input.value = "";
     refreshDraftChips();
     refreshSuggestions();
     input.focus();
-  });
+    });
 }
 
 async function addItemFromDraft(draft){
@@ -648,4 +655,32 @@ async function cloudClearList(){
   await batch.commit();
   activeMeals = new Set();
   await saveMealState();
+}
+// ===== STEP-5: Undo helpers =====
+async function undoAddItem(name, qty, source){
+  const ref = itemsCol.doc(slug(name));
+  const snap = await ref.get();
+  if(!snap.exists) return;
+
+  const data = snap.data() || {};
+  const current = Number(data.count || 0);
+  const next = current - (Number(qty) || 1);
+
+  if (next <= 0) {
+    // If this add created the item, remove it entirely
+    await ref.delete();
+    return;
+  }
+
+  // Otherwise decrement and remove this source tag
+  await ref.set({
+    count: inc(-Math.max(1, Number(qty) || 1)),
+    origins: arrDel(source)
+  }, { merge: true });
+}
+
+function showUndo(label, onUndo){
+  if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
+    window.GrocifyUndo.show(label, onUndo);
+  }
 }
