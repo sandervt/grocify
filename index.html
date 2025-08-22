@@ -60,7 +60,10 @@
                 <form id="addForm" class="sheet__form" autocomplete="off">
                   <label for="addInput" class="sr-only">Voeg item toe</label>
                   <input id="addInput" type="text" inputmode="text" placeholder="Bijv. melk 2L of 3x bananen" />
-
+                  
+                  <!-- Parsed tokens (STEP-4) -->
+                  <div id="parsedChips" class="parsed-chips" aria-live="polite" aria-atomic="true"></div>
+                  
                   <ul id="suggestions" class="suggestions"></ul>
 
                   <div class="sheet__actions">

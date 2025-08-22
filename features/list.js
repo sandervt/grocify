@@ -3,7 +3,7 @@ import { SECTION_ORDER, MEAL_DATA, WEEKLY_GROUPS, ITEM_TO_SECTION, inferSection,
 
 /** Local state */
 let activeMeals = new Set();            // from uiState.activeMeals
-let activeItems = {};                   // { name: { count, sources:Set, checked } }
+let activeItems = {};                   // { name: { count, sources:Set, checked, unit? } }
 let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
@@ -12,15 +12,9 @@ let KNOWN_ITEMS = [];
 const RECENTS_KEY = "grocify_recents_v1";
 const RECENTS_MAX = 12;
 function loadRecents(){
-  try {
-    const raw = localStorage.getItem(RECENTS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.filter(Boolean) : [];
-  } catch { return []; }
+  try { const raw = localStorage.getItem(RECENTS_KEY); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr.filter(Boolean) : []; } catch { return []; }
 }
-function saveRecents(list){
-  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, RECENTS_MAX))); } catch {}
-}
+function saveRecents(list){ try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, RECENTS_MAX))); } catch {} }
 function pushRecent(name){
   const n = (name || "").trim();
   if(!n) return;
@@ -78,7 +72,10 @@ export function initListFeature(){
   setClearCtaVisible(false);
 
   // Refresh suggestions on composer open (STEP-3)
-  document.addEventListener('composer:open', () => refreshSuggestions());
+  document.addEventListener('composer:open', () => {
+    refreshSuggestions();
+    refreshDraftChips();
+  });
 }
 
 /* ---------- Known items pool ---------- */
@@ -88,9 +85,7 @@ function getKnownItems(){
   const all = new Set([...fromMap, ...fromMeals, ...Object.keys(activeItems)]);
   return [...all].sort((a,b) => a.localeCompare(b));
 }
-function refreshKnownItems(){
-  KNOWN_ITEMS = getKnownItems();
-}
+function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
 
 /* ---------- Weekly selections ---------- */
 function renderWeeklies(){
@@ -125,7 +120,7 @@ function renderWeeklies(){
         const isOn = btn.classList.toggle("active");
         if (isOn) {
           const sec = inferSection(name);
-          await cloudAddItem(name, sec, group);
+          await cloudAddItem(name, sec, group, 1, undefined);
         } else {
           await cloudRemoveSource(name, group);
         }
@@ -242,7 +237,8 @@ function setActiveFromCloud(cloudDocs){
     activeItems[d.name] = {
       count: d.count || 1,
       sources: new Set(d.origins || []),
-      checked: !!d.checked
+      checked: !!d.checked,
+      unit: d.unit || undefined
     };
   });
   refreshKnownItems();
@@ -286,11 +282,13 @@ function renderList(){
       const row = document.createElement("li");
       row.className = "item-row";
       const data = activeItems[name];
+      const qtyStr = data.count > 1 ? `×${data.count}` : "";
+      const unitStr = data.unit ? ` <span class="unit">(${data.unit})</span>` : "";
       row.innerHTML = `
         <label class="checkbox">
           <input type="checkbox" ${data.checked ? "checked" : ""}/>
-          <span class="label">${name}</span>
-          <span class="qty">${data.count > 1 ? `×${data.count}` : ""}</span>
+          <span class="label">${name}${unitStr}</span>
+          <span class="qty">${qtyStr}</span>
         </label>
       `;
       const cb = row.querySelector("input[type=checkbox]");
@@ -302,6 +300,132 @@ function renderList(){
 
     ul.appendChild(li);
   });
+}
+
+/* ---------- Parser + chips (STEP-4) ---------- */
+function parseDraft(raw){
+  const s = (raw || "").trim();
+  if (!s) return null;
+
+  // Patterns:
+  // 1) 3x bananas
+  let m = s.match(/^(\d+)\s*(x|×)\s*(.+)$/i);
+  if (m) {
+    const qty = parseInt(m[1], 10) || 1;
+    const name = m[3].trim();
+    return finalizeDraft({ name, qty });
+  }
+
+  // 2) 500g pasta  (qty+unit first)
+  m = s.match(/^(\d+(?:\.\d+)?)\s*([A-Za-z]+)\s+(.+)$/i);
+  if (m) {
+    const qty = parseFloat(m[1]) || 1;
+    const unit = m[2];
+    const name = m[3].trim();
+    return finalizeDraft({ name, qty, unit });
+  }
+
+  // 3) pasta 500g  (name first)
+  m = s.match(/^(.+?)\s+(\d+(?:\.\d+)?)\s*([A-Za-z]+)$/i);
+  if (m) {
+    const name = m[1].trim();
+    const qty = parseFloat(m[2]) || 1;
+    const unit = m[3];
+    return finalizeDraft({ name, qty, unit });
+  }
+
+  // Fallback: name only
+  return finalizeDraft({ name: s, qty: 1 });
+}
+
+function finalizeDraft(d){
+  const name = (d.name || "").trim();
+  const qty  = (d.qty == null || isNaN(d.qty)) ? 1 : d.qty;
+  const unit = (d.unit || "").trim() || undefined;
+  const section = inferSection(name);
+  return { name, qty, unit, section };
+}
+
+function refreshDraftChips(){
+  const input = document.getElementById("addInput");
+  const host  = document.getElementById("parsedChips");
+  if(!input || !host) return;
+
+  const draft = parseDraft(input.value);
+  host.innerHTML = "";
+  if (!draft) return;
+
+  // Name chip
+  host.appendChild(makeChip("Naam", draft.name, async () => {
+    const next = prompt("Naam wijzigen:", draft.name);
+    if (next != null) {
+      input.value = `${next} ${draft.unit ? draft.qty + draft.unit : draft.qty > 1 ? `x${draft.qty}` : ""}`.trim();
+      refreshDraftChips();
+      refreshSuggestions();
+    }
+  }));
+
+  // Qty chip
+  host.appendChild(makeChip("Aantal", String(draft.qty), async () => {
+    const nextStr = prompt("Aantal:", String(draft.qty));
+    const next = nextStr == null ? draft.qty : Number(nextStr);
+    if (!isNaN(next) && next > 0) {
+      const pieces = [draft.name];
+      if (draft.unit) pieces.push(`${next}${draft.unit}`);
+      else if (next !== 1) pieces.push(`${next}x`);
+      input.value = pieces.join(" ");
+      refreshDraftChips();
+      refreshSuggestions();
+    }
+  }));
+
+  // Unit chip (free text; optional)
+  host.appendChild(makeChip("Eenheid", draft.unit || "—", async () => {
+    const next = prompt("Eenheid (vrij tekst, bijv. g, L, pak):", draft.unit || "");
+    const pieces = [draft.name];
+    const q = draft.qty || 1;
+    if (next && next.trim()) pieces.push(`${q}${next.trim()}`);
+    else if (q !== 1) pieces.push(`${q}x`);
+    input.value = pieces.join(" ");
+    refreshDraftChips();
+    refreshSuggestions();
+  }));
+
+  // Section chip (picker from SECTION_ORDER)
+  const secWrap = document.createElement("span");
+  secWrap.className = "parsed-chip parsed-select";
+  const key = document.createElement("span");
+  key.className = "key";
+  key.textContent = "Sectie";
+  const sel = document.createElement("select");
+  SECTION_ORDER.forEach(sec => {
+    const opt = document.createElement("option");
+    opt.value = sec; opt.textContent = sec;
+    if (sec === draft.section) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener("change", () => {
+    // We don't rewrite the raw input for section; we just apply at add-time.
+    sel.blur();
+  });
+  secWrap.appendChild(key);
+  secWrap.appendChild(sel);
+  host.appendChild(secWrap);
+}
+
+function makeChip(label, value, onEdit){
+  const chip = document.createElement("span");
+  chip.className = "parsed-chip";
+  const k = document.createElement("span");
+  k.className = "key";
+  k.textContent = label;
+  const v = document.createElement("button");
+  v.type = "button";
+  v.textContent = value;
+  v.addEventListener("click", onEdit);
+  chip.appendChild(k);
+  chip.appendChild(v);
+  return chip;
 }
 
 /* ---------- Composer: suggestions & add ---------- */
@@ -324,13 +448,14 @@ function refreshSuggestions(){
       li.addEventListener("click", () => {
         input.value = name;
         input.focus();
+        refreshDraftChips();
       });
       list.appendChild(li);
     });
     return;
   }
 
-  // Show type-ahead matches (parity with before)
+  // Type-ahead matches
   const suggestions = suggestMatches(q, KNOWN_ITEMS, 12);
   suggestions.forEach(s => {
     const li = document.createElement("li");
@@ -338,6 +463,7 @@ function refreshSuggestions(){
     li.addEventListener("click", () => {
       input.value = s;
       input.focus();
+      refreshDraftChips();
     });
     list.appendChild(li);
   });
@@ -346,17 +472,20 @@ function refreshSuggestions(){
 function wireDetailsSections(){
   const input = document.getElementById("addInput");
   if(!input) return;
-
-  // Initial render (for when composer opens later)
   refreshSuggestions();
+  refreshDraftChips();
 
-  input.addEventListener("input", () => refreshSuggestions());
+  input.addEventListener("input", () => {
+    refreshDraftChips();
+    refreshSuggestions();
+  });
 }
 
 function wireAddDialog(){
   const form  = document.getElementById("addForm");
   const input = document.getElementById("addInput");
   const ok    = document.getElementById("addConfirm");
+  const secSel = () => document.querySelector(".parsed-select select");
   if(!form || !input || !ok) return;
 
   form.addEventListener("submit", (e) => {
@@ -367,18 +496,26 @@ function wireAddDialog(){
   ok.addEventListener("click", async () => {
     const raw = input.value.trim();
     if(!raw) return;
-    await addItemFromRaw(raw);
-    pushRecent(raw); // STEP-3: remember for recents
+
+    const draft = parseDraft(raw);
+    const chosenSection = secSel()?.value || draft.section;
+
+    await addItemFromDraft({ ...draft, section: chosenSection });
+
+    pushRecent(draft.name); // remember for recents
     input.value = "";
+    refreshDraftChips();
     refreshSuggestions();
     input.focus();
   });
 }
 
-async function addItemFromRaw(raw){
-  const name = raw;
-  const sec  = inferSection(name);
-  await cloudAddItem(name, sec, "Eigen");
+async function addItemFromDraft(draft){
+  const name = draft.name;
+  const sec  = draft.section;
+  const qty  = Math.max(1, Number(draft.qty) || 1);
+  const unit = draft.unit || undefined;
+  await cloudAddItem(name, sec, "Eigen", qty, unit);
 }
 
 /* ---------- Clear list ---------- */
@@ -386,14 +523,12 @@ function wireClearList(){
   const btn = document.getElementById("clearListBtn");
   if(!btn) return;
   btn.addEventListener("click", async () => {
-    // Check if there are items first
     const snap = await itemsCol.get();
     if (snap.empty) return;
 
     const ok = window.confirm("Weet je zeker dat je de hele lijst wilt leegmaken? Je kunt dit ongedaan maken.");
     if(!ok) return;
 
-    // Snapshot current items and active meals for Undo
     const prevItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     let prevMeals = [];
     try {
@@ -401,10 +536,8 @@ function wireClearList(){
       prevMeals = (st.exists && Array.isArray(st.data().activeMeals)) ? st.data().activeMeals : [];
     } catch(e){ prevMeals = []; }
 
-    // Perform clear
     await cloudClearList();
 
-    // Reset local UI toggles (pills, weeklies)
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group").forEach(card => {
@@ -416,10 +549,8 @@ function wireClearList(){
     });
     updateCounter();
 
-    // Offer Undo
     if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
       window.GrocifyUndo.show("Lijst geleegd", async () => {
-        // Restore items and meal state
         const batch = firebase.firestore().batch();
         prevItems.forEach(it => {
           const ref = itemsCol.doc(it.id);
@@ -428,9 +559,8 @@ function wireClearList(){
           batch.set(ref, data, { merge: true });
         });
         await batch.commit();
-        try {
-          await stateDoc.set({ activeMeals: prevMeals }, { merge: true });
-        } catch(e) { console.warn("Restore meals failed", e); }
+        try { await stateDoc.set({ activeMeals: prevMeals }, { merge: true }); }
+        catch(e) { console.warn("Restore meals failed", e); }
       });
     }
   });
@@ -451,12 +581,17 @@ function unifyFloatingActions(){
 }
 
 /* ---------- Cloud ops ---------- */
-async function cloudAddItem(name, section, source){
+async function cloudAddItem(name, section, source, qty=1, unit){
   const ref = itemsCol.doc(slug(name));
   await ref.set({
     name,
     section,
-    count: inc(1),
+    count: inc(qty),
+    unit: unit
+      ? unit
+      : (firebase.firestore.FieldValue.delete
+          ? firebase.firestore.FieldValue.delete()
+          : undefined),
     origins: arrAdd(source),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
