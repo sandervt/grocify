@@ -44,6 +44,59 @@ import { initStoresFeature } from "./features/stores.js";
   };
 })();
 
+// ===== Bottom Sheet Controller (STEP-2) =====
+const Composer = (() => {
+  let root, panel, scrim, input, closeBtn;
+
+  function ensure() {
+    root = root || document.getElementById('composer');
+    if (!root) return null;
+    panel = root.querySelector('.sheet__panel');
+    scrim = root.querySelector('.sheet__scrim');
+    input = document.getElementById('addInput');
+    closeBtn = document.getElementById('sheetClose');
+    return root;
+  }
+
+  function open() {
+    if (!ensure()) return;
+    root.classList.add('open');
+    // Small delay to allow paint before focusing
+    setTimeout(() => input?.focus(), 50);
+    // Trap a minimal Esc to close
+    window.addEventListener('keydown', onKey);
+  }
+
+  function close() {
+    if (!ensure()) return;
+    root.classList.remove('open');
+    window.removeEventListener('keydown', onKey);
+    // Return focus to FAB for good a11y flow
+    document.getElementById('fabAdd')?.focus();
+  }
+
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+
+  function wire() {
+    if (!ensure()) return;
+    scrim?.addEventListener('click', close);
+    closeBtn?.addEventListener('click', close);
+    // Prevent scroll bleed
+    panel?.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
+  }
+
+  return { open, close, wire };
+})();
+
+// Call once at startup
+document.addEventListener('DOMContentLoaded', () => {
+  Composer.wire();
+  const fab = document.getElementById('fabAdd');
+  fab?.addEventListener('click', () => Composer.open());
+});
+
 function initRouter(){
   const TABS = ["list","recipes","stores"];
   const DEFAULT_TAB = "list";

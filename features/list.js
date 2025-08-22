@@ -4,8 +4,8 @@ import { SECTION_ORDER, MEAL_DATA, WEEKLY_GROUPS, ITEM_TO_SECTION, inferSection,
 /** Local state */
 let activeMeals = new Set();            // from uiState.activeMeals
 let activeItems = {};                   // { name: { count, sources:Set, checked } }
-let customRecipeDocs = {};              // name -> { id, items }
-let combinedMeals = {};                 // built-ins + customs
+let customRecipeDocs = {};              // name -> { id, items: string[] }
+let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 
 /** Public for Stores feature to re-render after active store change */
@@ -30,257 +30,171 @@ export function initListFeature(){
     err => console.error("onSnapshot state error", err)
   );
 
-  // custom recipes live (for pills list + known items pool)
-  recipesCol.orderBy('name').onSnapshot(
+  // custom recipes live
+  recipesCol.onSnapshot(
     snap => {
-      const map = {};
-      snap.docs.forEach(d => {
+      customRecipeDocs = {};
+      snap.forEach(d => {
         const data = d.data() || {};
         const name = (data.name || "").trim();
-        if(!name) return;
-        map[name] = { id: d.id, items: Array.isArray(data.items) ? data.items : [] };
+        if (!name) return;
+        customRecipeDocs[name] = { id: d.id, items: Array.isArray(data.items) ? data.items : [] };
       });
-      customRecipeDocs = map;
       recomputeCombinedMeals();
+      renderMeals();
     },
     err => console.error("recipes onSnapshot error", err)
   );
 
   // UI wiring
+  recomputeCombinedMeals();
   renderMeals();
   renderWeeklies();
   updateCounter();
   wireDetailsSections();
   wireAddDialog();
   wireClearList();
-  updateClearCtaVisibility(false);
+  setClearCtaVisible(false);
 }
 
 /* ---------- Known items pool ---------- */
 function getKnownItems(){
   const fromMap   = Object.keys(ITEM_TO_SECTION);
-  const fromMeals = Object.values(MEAL_DATA).flat();
-  const fromWk    = Object.values(WEEKLY_GROUPS).flat();
-  const fromCloud = Object.keys(activeItems);
-  const fromCustom= Object.values(customRecipeDocs).flatMap(d => d.items || []);
-  return Array.from(new Set([...fromMap, ...fromMeals, ...fromWk, ...fromCloud, ...fromCustom]))
-    .sort((a,b)=>a.localeCompare(b));
+  const fromMeals = Object.values(combinedMeals).flatMap(arr => Array.isArray(arr) ? arr : []);
+  const all = new Set([...fromMap, ...fromMeals, ...Object.keys(activeItems)]);
+  return [...all].sort((a,b) => a.localeCompare(b));
 }
-function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
-
-/* ---------- Cloud writes ---------- */
-async function cloudAddItem(name, section, origin){
-  try{
-    const id = slug(name);
-    await itemsCol.doc(id).set({
-      name, section,
-      count: inc(),
-      origins: arrAdd(origin),
-      checked: false,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge:true });
-  }catch(err){
-    console.error("cloudAddItem failed", err);
-    alert("Kon item niet toevoegen: " + err.message);
-  }
-}
-async function cloudRemoveItem(name, origin){
-  const id = slug(name);
-  await firebase.firestore().runTransaction(async tx => {
-    const ref = itemsCol.doc(id);
-    const snap = await tx.get(ref);
-    if(!snap.exists) return;
-    const data = snap.data();
-    const newCount = (data.count || 0) - 1;
-    if(newCount <= 0) tx.delete(ref);
-    else tx.update(ref, { count: newCount, origins: arrDel(origin) });
-  });
-}
-async function cloudToggleChecked(name, checked){
-  await itemsCol.doc(slug(name)).set({ checked }, { merge:true });
-}
-async function saveMealState(){
-  try{
-    await stateDoc.set({ activeMeals: Array.from(activeMeals) }, { merge:true });
-  }catch(e){ console.error("saveMealState failed", e); }
-}
-async function cloudClearList(){
-  const snap = await itemsCol.get();
-  const batch = firebase.firestore().batch();
-  snap.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  activeMeals = new Set();
-  await saveMealState();
+function refreshKnownItems(){
+  KNOWN_ITEMS = getKnownItems();
 }
 
-/* ---------- Meals dataset = built-ins + customs ---------- */
-function recomputeCombinedMeals(){
-  combinedMeals = { ...MEAL_DATA };
-  Object.entries(customRecipeDocs).forEach(([name, doc]) => {
-    combinedMeals[name] = doc.items || [];
-  });
-  refreshKnownItems();
-  renderMeals();
-}
-
-/* ---------- Meals UI (pills) ---------- */
-function renderMeals(){
-  const row = document.getElementById("mealRow");
-  if(!row) return;
-  row.innerHTML = "";
-  const names = Object.keys(combinedMeals).sort((a,b)=>a.localeCompare(b));
-  names.forEach(meal => {
-    const btn = document.createElement("button");
-    btn.textContent = meal;
-    btn.dataset.meal = meal;
-    btn.classList.toggle("active", activeMeals.has(meal));
-    btn.onclick = async () => {
-      const willActivate = !btn.classList.contains("active");
-      const items = combinedMeals[meal] || [];
-      if(willActivate){
-        activeMeals.add(meal);
-        for(const item of items){
-          const sec = inferSection(item);
-          cloudAddItem(item, sec, meal);
-        }
-      }else{
-        activeMeals.delete(meal);
-        for(const item of items){
-          cloudRemoveItem(item, meal);
-        }
-      }
-      btn.classList.toggle("active", willActivate);
-      updateCounter();
-      await saveMealState();
-    };
-    row.appendChild(btn);
-  });
-}
-function reflectMealPillsFromState(){
-  const row = document.getElementById("mealRow");
-  if(!row) return;
-  row.querySelectorAll("button[data-meal]").forEach(btn => {
-    const meal = btn.dataset.meal;
-    btn.classList.toggle("active", activeMeals.has(meal));
-  });
-}
-
-/* ---------- Weeklies Accordion UI ---------- */
+/* ---------- Weekly selections ---------- */
 function renderWeeklies(){
-  const container = document.getElementById("weeklyAccordion");
+  const container = document.getElementById("weeklyGroups");
   if(!container) return;
+
   container.innerHTML = "";
-  Object.keys(WEEKLY_GROUPS).forEach(group => {
+  Object.entries(WEEKLY_GROUPS).forEach(([group, items]) => {
     const card = document.createElement("div");
     card.className = "weekly-group";
-    card.dataset.group = group;
-
-    const header = document.createElement("button");
-    header.className = "weekly-group__header";
-    header.onclick = () => toggleWeeklyGroupAccordion(group);
-
-    const titleWrap = document.createElement("span");
-    titleWrap.className = "weekly-group__title";
-
-    const chev = document.createElement("span");
-    chev.className = "weekly-group__chev";
-    chev.textContent = "►";
-
-    const title = document.createElement("span");
-    title.textContent = group;
-
-    titleWrap.append(chev, title);
-
-    const badge = document.createElement("span");
-    badge.className = "weekly-group__badge";
-    badge.textContent = "0 geselecteerd";
-
-    header.append(titleWrap, badge);
-
-    const content = document.createElement("div");
-    content.className = "weekly-group__content";
-    content.id = `group-${group}`;
-
-    WEEKLY_GROUPS[group].forEach(item => {
-      const b = document.createElement("button");
-      b.textContent = item;
-      b.dataset.item = item;
-      b.onclick = () => {
-        const active = b.classList.toggle("active");
-        if(active){
-          const sec = inferSection(item);
-          cloudAddItem(item, sec, group);
-        }else{
-          cloudRemoveItem(item, group);
-        }
-        updateWeeklyBadge(group);
-      };
-      content.appendChild(b);
+    card.innerHTML = `
+      <div class="weekly-group__header">
+        <span class="weekly-group__chev">►</span>
+        <span class="weekly-group__title">${group}</span>
+        <span class="weekly-group__badge">0</span>
+      </div>
+      <div class="weekly-group__content"></div>
+    `;
+    const header = card.querySelector(".weekly-group__header");
+    header.addEventListener("click", () => {
+      card.classList.toggle("open");
+      header.classList.toggle("active");
+      header.querySelector(".weekly-group__chev").textContent = card.classList.contains("open") ? "▼" : "►";
     });
 
-    card.append(header, content);
+    const wrap = card.querySelector(".weekly-group__content");
+    items.forEach(name => {
+      const btn = document.createElement("button");
+      btn.textContent = name;
+      btn.className = "chip";
+      btn.addEventListener("click", async () => {
+        const isOn = btn.classList.toggle("active");
+        if (isOn) {
+          const sec = inferSection(name);
+          await cloudAddItem(name, sec, group);
+        } else {
+          await cloudRemoveSource(name, group);
+        }
+      });
+      wrap.appendChild(btn);
+    });
+
     container.appendChild(card);
-    updateWeeklyBadge(group);
   });
-  syncWeeklySelectionsFromCloud();
-}
-function toggleWeeklyGroupAccordion(groupName){
-  const cards = document.querySelectorAll(".weekly-group");
-  cards.forEach(card => {
-    const header = card.querySelector(".weekly-group__header");
-    const chev = card.querySelector(".weekly-group__chev");
-    const isTarget = card.dataset.group === groupName;
-    if(isTarget){
-      const willOpen = !card.classList.contains("open");
-      card.classList.toggle("open", willOpen);
-      chev.textContent = willOpen ? "▼" : "►";
-      header.classList.toggle("active", willOpen);
-      if(willOpen) card.scrollIntoView({ behavior:"smooth", block:"start" });
-    }else{
-      card.classList.remove("open");
-      header.classList.remove("active");
-      const otherChev = card.querySelector(".weekly-group__chev");
-      if(otherChev) otherChev.textContent = "►";
-    }
-  });
-}
-function updateWeeklyBadge(groupName){
-  const count = Object.entries(activeItems)
-    .filter(([_, data]) => data.sources.has(groupName))
-    .length;
-  const card = document.querySelector(`.weekly-group[data-group="${CSS.escape(groupName)}"]`);
-  if(!card) return;
-  const badge = card.querySelector(".weekly-group__badge");
-  badge.textContent = count === 1 ? "1 geselecteerd" : `${count} geselecteerd`;
 }
 function updateAllWeeklyBadges(){
-  Object.keys(WEEKLY_GROUPS).forEach(updateWeeklyBadge);
+  const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
+  const map = {};
+  for (const data of Object.values(activeItems)) {
+    for (const src of data.sources) {
+      if (weeklyGroups.has(src)) map[src] = (map[src] || 0) + 1;
+    }
+  }
+  document.querySelectorAll(".weekly-group").forEach(card => {
+    const title = card.querySelector(".weekly-group__title")?.textContent ?? "";
+    const badge = card.querySelector(".weekly-group__badge");
+    const count = map[title] || 0;
+    if (badge) badge.textContent = count;
+  });
 }
 function syncWeeklySelectionsFromCloud(){
-  Object.keys(WEEKLY_GROUPS).forEach(group => {
-    const content = document.getElementById(`group-${group}`);
-    if(!content) return;
-    content.querySelectorAll("button").forEach(btn => {
-      const item = btn.dataset.item;
-      const cloud = activeItems[item];
-      const shouldBeActive = !!(cloud && cloud.sources.has(group));
-      btn.classList.toggle("active", shouldBeActive);
-    });
-    updateWeeklyBadge(group);
+  const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
+  const active = {};
+  for (const [name, data] of Object.entries(activeItems)) {
+    for (const src of data.sources) {
+      if (weeklyGroups.has(src)) active[`${src}__${name}`] = true;
+    }
+  }
+  document.querySelectorAll(".weekly-group__content button").forEach(btn => {
+    const group = btn.closest(".weekly-group")?.querySelector(".weekly-group__title")?.textContent ?? "";
+    const key = `${group}__${btn.textContent}`;
+    btn.classList.toggle("active", !!active[key]);
   });
-  updateWeeklyHeaderCounter();
-  updateClearCtaVisibility(cloudDocs.length > 0);
 }
 
-// MVP STEP-1: toggle visibility of bottom clear CTA
-function updateClearCtaVisibility(hasItems){
-  const btn = document.getElementById('clearListBtn');
-  if(!btn) return;
-  btn.style.display = hasItems ? 'block' : 'none';
+/* ---------- Meals ---------- */
+function recomputeCombinedMeals(){
+  // Normalize to: name -> items[] (strings)
+  const builtIns = {};
+  Object.entries(MEAL_DATA || {}).forEach(([name, items]) => {
+    builtIns[name] = Array.isArray(items) ? items : [];
+  });
+  const customs = {};
+  Object.entries(customRecipeDocs || {}).forEach(([name, doc]) => {
+    customs[name] = Array.isArray(doc.items) ? doc.items : [];
+  });
+  combinedMeals = { ...builtIns, ...customs };
+}
+function renderMeals(){
+  const wrap = document.getElementById("mealsWrap");
+  if(!wrap) return;
+
+  wrap.innerHTML = "";
+  Object.entries(combinedMeals).forEach(([name, items]) => {
+    const row = document.createElement("div");
+    row.className = "meal-row";
+    row.innerHTML = `
+      <button class="chip">${name}</button>
+      <div class="meal-row__items">${(items || []).map(i => `<span>${i}</span>`).join("")}</div>
+    `;
+    const btn = row.querySelector("button");
+    btn.addEventListener("click", async () => {
+      const turnOn = !btn.classList.contains("active");
+      btn.classList.toggle("active", turnOn);
+      if (turnOn) {
+        await cloudAddRecipe(name);
+        activeMeals.add(name);
+      } else {
+        await cloudRemoveRecipe(name);
+        activeMeals.delete(name);
+      }
+      await saveMealState();
+      updateCounter();
+    });
+    if (activeMeals.has(name)) btn.classList.add("active");
+    wrap.appendChild(row);
+  });
+  updateCounter();
+  updateAllWeeklyBadges();
+}
+function reflectMealPillsFromState(){
+  document.querySelectorAll(".meal-row button").forEach(btn => {
+    const name = btn.textContent || "";
+    btn.classList.toggle("active", activeMeals.has(name));
+  });
 }
 
-
-/* ---------- Shopping list ---------- */
+/* ---------- Header counters ---------- */
 function updateCounter(){
   const el = document.getElementById("mealCounter");
   if(!el) return;
@@ -312,13 +226,13 @@ function setActiveFromCloud(cloudDocs){
   syncWeeklySelectionsFromCloud();
   updateAllWeeklyBadges();
   updateWeeklyHeaderCounter();
-  updateClearCtaVisibility(cloudDocs.length > 0);
+  setClearCtaVisible(cloudDocs.length > 0);
 }
 
 // MVP STEP-1: toggle visibility of bottom clear CTA
-function updateClearCtaVisibility(hasItems){
+function setClearCtaVisible(hasItems){
   const btn = document.getElementById('clearListBtn');
-  if(!btn) return;
+  if (!btn) return;
   btn.style.display = hasItems ? 'block' : 'none';
 }
 
@@ -331,132 +245,114 @@ function renderList(){
     : SECTION_ORDER;
 
   order.forEach(section => {
-    const items = Object.keys(activeItems).filter(i => (ITEM_TO_SECTION[i] || "Eigen") === section);
-    if(items.length > 0){
-      const header = document.createElement("li");
-      header.className = "section-header";
-      header.textContent = section;
-      ul.appendChild(header);
-      items.forEach(name => {
-        const data = activeItems[name];
-        const li = document.createElement("li");
-        const label = data.count > 1 ? `${name} (${data.count}x)` : name;
-        const span = document.createElement("span");
-        span.textContent = label;
-        const small = document.createElement("small");
-        small.textContent = Array.from(data.sources).join(", ");
-        li.append(span, small);
-        li.classList.toggle("crossed", !!data.checked);
-        li.onclick = () => cloudToggleChecked(name, !li.classList.contains("crossed"));
-        ul.appendChild(li);
+    const items = Object.keys(activeItems).filter(i => (ITEM_TO_SECTION[i] || inferSection(i)) === section);
+    if (items.length === 0) return;
+
+    const li = document.createElement("li");
+    li.className = "section";
+    li.innerHTML = `
+      <div class="section__header">
+        <h3>${section}</h3>
+        <span class="section__count">${items.filter(i => !activeItems[i].checked).length}/${items.length}</span>
+      </div>
+      <ul class="section__items"></ul>
+    `;
+    const inner = li.querySelector(".section__items");
+    items.sort((a,b) => a.localeCompare(b)).forEach(name => {
+      const row = document.createElement("li");
+      row.className = "item-row";
+      const data = activeItems[name];
+      row.innerHTML = `
+        <label class="checkbox">
+          <input type="checkbox" ${data.checked ? "checked" : ""}/>
+          <span class="label">${name}</span>
+          <span class="qty">${data.count > 1 ? `×${data.count}` : ""}</span>
+        </label>
+      `;
+      const cb = row.querySelector("input[type=checkbox]");
+      cb.addEventListener("change", async () => {
+        await cloudToggleCheck(name, cb.checked);
       });
-    }
+      inner.appendChild(row);
+    });
+
+    ul.appendChild(li);
   });
 }
 
-/* ---------- UI state for details sections ---------- */
+/* ---------- Details / search / add ---------- */
 function wireDetailsSections(){
-  const mealsDetails    = document.getElementById('sec-meals');
-  const weekliesDetails = document.getElementById('sec-weeklies');
-  if(!mealsDetails || !weekliesDetails) return;
+  const input = document.getElementById("addInput");
+  const list  = document.getElementById("suggestions"); // fixed id
+  if(!input || !list) return;
 
-  if (localStorage.getItem('sec-weeklies-open') === null && window.innerWidth < 768) {
-    weekliesDetails.removeAttribute('open');
-  }
-  const s1 = localStorage.getItem('sec-meals-open');
-  if (s1 !== null) mealsDetails.toggleAttribute('open', s1 === 'true');
-  const s2 = localStorage.getItem('sec-weeklies-open');
-  if (s2 !== null) weekliesDetails.toggleAttribute('open', s2 === 'true');
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    list.innerHTML = "";
+    if (!q) return;
 
-  function wire(detailsEl){
-    const summary = detailsEl.querySelector('summary .section__chev');
-    const update = () => { if (summary) summary.textContent = detailsEl.open ? '▼' : '►'; };
-    update();
-    detailsEl.addEventListener('toggle', () => {
-      update();
-      const key = detailsEl.id + '-open';
-      localStorage.setItem(key, String(detailsEl.open));
+    const suggestions = suggestMatches(q, KNOWN_ITEMS, 12);
+    suggestions.forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = s;
+      li.addEventListener("click", async () => {
+        input.value = s;
+        input.focus();
+      });
+      list.appendChild(li);
     });
-  }
-  wire(mealsDetails);
-  wire(weekliesDetails);
+  });
+}
+function wireAddDialog(){
+  const form  = document.getElementById("addForm");
+  const input = document.getElementById("addInput");
+  const ok    = document.getElementById("addConfirm");
+  const fab   = document.getElementById("fabAdd");
+  const closeBtn = document.getElementById("sheetClose");
+  if(!form || !input || !ok || !fab) return;
+
+  // Open handled in main.js (Composer.open)
+  // Close handler for after adding (we keep sheet open in STEP-2; parser/auto-close comes later)
+  closeBtn?.addEventListener("click", () => {
+    // nothing else, main.js closes via controller
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    ok.click();
+  });
+
+  ok.addEventListener("click", async () => {
+    const raw = input.value.trim();
+    if(!raw) return;
+    await addItemFromRaw(raw);
+    input.value = "";
+    const list = document.getElementById("suggestions");
+    if (list) list.innerHTML = "";
+    input.focus();
+  });
 }
 
-/* ---------- Add item dialog + FAB ---------- */
-function wireAddDialog(){
-  const fab        = document.getElementById("fabAdd");
-  const dlg        = document.getElementById("addDialog");
-  const addInput   = document.getElementById("addInput");
-  const addConfirm = document.getElementById("addConfirm");
-  const addCancel  = document.getElementById("addCancel");
-  const suggBox    = document.getElementById("suggestions");
-  if(!fab || !dlg) return;
-
-  function refreshKnownItemsAndClearDialog(){
-    refreshKnownItems();
-    suggBox.innerHTML = "";
-    addInput.value = "";
-  }
-
-  fab.addEventListener("click", () => {
-    refreshKnownItemsAndClearDialog();
-    dlg.showModal();
-    setTimeout(()=> addInput.focus(), 0);
-  });
-  addCancel.addEventListener("click", () => dlg.close());
-  addInput.addEventListener("input", () => {
-    const q = addInput.value;
-    const matches = suggestMatches(q, KNOWN_ITEMS);
-    suggBox.innerHTML = "";
-    matches.forEach(name => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = name + " · " + inferSection(name);
-      b.addEventListener("click", async () => {
-        await addName(name);
-        addInput.value = ""; dlg.close();
-      });
-      suggBox.appendChild(b);
-    });
-  });
-  addInput.addEventListener("keydown", async (e) => {
-    if(e.key === "Enter"){
-      e.preventDefault();
-      if(!addInput.value.trim()) return;
-      await addName(addInput.value.trim());
-      addInput.value = "";
-      dlg.close();
-    }
-  });
-  addConfirm.addEventListener("click", async (e) => {
-    e.preventDefault();
-    if(!addInput.value.trim()) return;
-    await addName(addInput.value.trim());
-    addInput.value = "";
-    dlg.close();
-  });
-  async function addName(name){
-    const sec = inferSection(name);
-    await cloudAddItem(name, sec, "Eigen");
-  }
+async function addItemFromRaw(raw){
+  const name = raw;
+  const sec  = inferSection(name);
+  await cloudAddItem(name, sec, "Eigen");
 }
 
 /* ---------- Clear list ---------- */
-
 function wireClearList(){
   const btn = document.getElementById("clearListBtn");
   if(!btn) return;
-
   btn.addEventListener("click", async () => {
-    // No items? do nothing.
-    const itemsSnap = await itemsCol.get();
-    if(itemsSnap.empty) return;
+    // Check if there are items first
+    const snap = await itemsCol.get();
+    if (snap.empty) return;
 
     const ok = window.confirm("Weet je zeker dat je de hele lijst wilt leegmaken? Je kunt dit ongedaan maken.");
     if(!ok) return;
 
-    // Snapshot current items and active meals to enable Undo
-    const prevItems = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Snapshot current items and active meals for Undo
+    const prevItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     let prevMeals = [];
     try {
       const st = await stateDoc.get();
@@ -466,7 +362,7 @@ function wireClearList(){
     // Perform clear
     await cloudClearList();
 
-    // Reset local UI toggles
+    // Reset local UI toggles (pills, weeklies)
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group").forEach(card => {
@@ -478,22 +374,21 @@ function wireClearList(){
     });
     updateCounter();
 
-    // Offer Undo via global snackbar
-    if(window.GrocifyUndo && typeof window.GrocifyUndo.show === "function"){
+    // Offer Undo
+    if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
       window.GrocifyUndo.show("Lijst geleegd", async () => {
         // Restore items and meal state
         const batch = firebase.firestore().batch();
         prevItems.forEach(it => {
           const ref = itemsCol.doc(it.id);
           const data = Object.assign({}, it);
-          // Remove server timestamp fields that would error on set
           delete data.updatedAt;
           batch.set(ref, data, { merge: true });
         });
         await batch.commit();
-        try{
+        try {
           await stateDoc.set({ activeMeals: prevMeals }, { merge: true });
-        }catch(e){ console.warn("Restore meals failed", e); }
+        } catch(e) { console.warn("Restore meals failed", e); }
       });
     }
   });
@@ -509,18 +404,71 @@ function unifyFloatingActions(){
   const clearLabel = 'Lijst leegmaken';
   fab.innerHTML   = '<span aria-hidden="true">＋</span><span class="sr-only">'+fabLabel+'</span>';
   clear.innerHTML = '<span aria-hidden="true">🗑️</span><span class="sr-only">'+clearLabel+'</span>';
-  fab.setAttribute('aria-label', fabLabel);
+  fab.setAttribute('aria-label', fabLabel)
   clear.setAttribute('aria-label', clearLabel);
-  fab.setAttribute('title', fabLabel);
-  clear.setAttribute('title', clearLabel);
+}
 
-  const existing = document.getElementById('fabTray');
-  if (existing) return; // already wrapped
-
-  const tray = document.createElement('div');
-  tray.className = 'fab-tray';
-  tray.id = 'fabTray';
-  tray.appendChild(fab);
-  tray.appendChild(clear);
-  document.body.appendChild(tray);
+/* ---------- Cloud ops ---------- */
+async function cloudAddItem(name, section, source){
+  const ref = itemsCol.doc(slug(name));
+  await ref.set({
+    name,
+    section,
+    count: inc(1),
+    origins: arrAdd(source),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+}
+async function cloudRemoveSource(name, source){
+  const ref = itemsCol.doc(slug(name));
+  const doc = await ref.get();
+  if (!doc.exists) return;
+  const data = doc.data();
+  const next = (data.origins || []).filter(x => x !== source);
+  if (next.length === 0) {
+    await ref.delete();
+  } else {
+    await ref.set({ origins: next }, { merge: true });
+  }
+}
+async function cloudRemoveRecipe(recipeName){
+  const items = combinedMeals[recipeName] || [];
+  const batch = firebase.firestore().batch();
+  items.forEach(n => {
+    const ref = itemsCol.doc(slug(n));
+    batch.set(ref, { origins: arrDel(recipeName) }, { merge: true });
+  });
+  await batch.commit();
+}
+async function cloudAddRecipe(recipeName){
+  const items = combinedMeals[recipeName] || [];
+  const batch = firebase.firestore().batch();
+  items.forEach(n => {
+    const ref = itemsCol.doc(slug(n));
+    batch.set(ref, {
+      name: n,
+      section: inferSection(n),
+      count: inc(1),
+      origins: arrAdd(recipeName),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  });
+  await batch.commit();
+}
+async function cloudToggleCheck(name, checked){
+  const ref = itemsCol.doc(slug(name));
+  await ref.set({ checked: !!checked }, { merge: true });
+}
+async function saveMealState(){
+  try{
+    await stateDoc.set({ activeMeals: [...activeMeals] }, { merge: true });
+  }catch(e){ console.error("saveMealState failed", e); }
+}
+async function cloudClearList(){
+  const snap = await itemsCol.get();
+  const batch = firebase.firestore().batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  activeMeals = new Set();
+  await saveMealState();
 }

@@ -49,17 +49,27 @@
 
             <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
             <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
-            <dialog id="addDialog">
-                <form method="dialog" id="addForm" class="add-form">
-                    <h3>Item toevoegen</h3>
-                    <input id="addInput" type="text" placeholder="Bijv. Paprika" autocomplete="off" />
-                    <div id="suggestions" class="suggestions"></div>
-                    <div class="actions">
-                        <button value="cancel" type="button" id="addCancel">Annuleren</button>
-                        <button value="ok" id="addConfirm">Toevoegen</button>
-                    </div>
+            <!-- Bottom-sheet composer (new) -->
+            <div id="composer" aria-hidden="true">
+              <div class="sheet__scrim" id="sheetScrim" tabindex="-1" aria-hidden="true"></div>
+              <div class="sheet__panel" role="dialog" aria-labelledby="sheetTitle" aria-modal="true">
+                <div class="sheet__handle" aria-hidden="true"></div>
+                <h2 id="sheetTitle" class="sr-only">Item toevoegen</h2>
+
+                <!-- Your existing add UI lives here, IDs preserved -->
+                <form id="addForm" class="sheet__form" autocomplete="off">
+                  <label for="addInput" class="sr-only">Voeg item toe</label>
+                  <input id="addInput" type="text" inputmode="text" placeholder="Bijv. melk 2L of 3x bananen" />
+
+                  <ul id="suggestions" class="suggestions"></ul>
+
+                  <div class="sheet__actions">
+                    <button type="button" id="addConfirm" class="btn btn-primary">Toevoegen</button>
+                    <button type="button" id="sheetClose" class="btn btn-ghost">Sluiten</button>
+                  </div>
                 </form>
-            </dialog>
+              </div>
+            </div>
 
             <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
         </section>
