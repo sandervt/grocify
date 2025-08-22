@@ -51,9 +51,21 @@ function initRouter(){
   syncFromHash();
 }
 
+(function hoistDialogsToBody(){
+  ['addDialog','recipeDialog'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
+  });
+})();
+
 window.addEventListener("DOMContentLoaded", async () => {
   await initFirebase();
   initRouter();
+
+  // Hoist the static dialogs out of .app so gutters don’t break
+  hoistDialogsToBody();
 
   // boot features
   initListFeature();
