@@ -53,7 +53,7 @@ export function initListFeature(){
   wireDetailsSections();
   wireAddDialog();
   wireClearList();
-  unifyFloatingActions();
+  updateClearCtaVisibility(false);
 }
 
 /* ---------- Known items pool ---------- */
@@ -269,7 +269,16 @@ function syncWeeklySelectionsFromCloud(){
     updateWeeklyBadge(group);
   });
   updateWeeklyHeaderCounter();
+  updateClearCtaVisibility(cloudDocs.length > 0);
 }
+
+// MVP STEP-1: toggle visibility of bottom clear CTA
+function updateClearCtaVisibility(hasItems){
+  const btn = document.getElementById('clearListBtn');
+  if(!btn) return;
+  btn.style.display = hasItems ? 'block' : 'none';
+}
+
 
 /* ---------- Shopping list ---------- */
 function updateCounter(){
@@ -303,7 +312,16 @@ function setActiveFromCloud(cloudDocs){
   syncWeeklySelectionsFromCloud();
   updateAllWeeklyBadges();
   updateWeeklyHeaderCounter();
+  updateClearCtaVisibility(cloudDocs.length > 0);
 }
+
+// MVP STEP-1: toggle visibility of bottom clear CTA
+function updateClearCtaVisibility(hasItems){
+  const btn = document.getElementById('clearListBtn');
+  if(!btn) return;
+  btn.style.display = hasItems ? 'block' : 'none';
+}
+
 function renderList(){
   const ul = document.getElementById("shoppingList");
   if(!ul) return;
@@ -424,19 +442,60 @@ function wireAddDialog(){
 }
 
 /* ---------- Clear list ---------- */
+
 function wireClearList(){
   const btn = document.getElementById("clearListBtn");
   if(!btn) return;
+
   btn.addEventListener("click", async () => {
+    // No items? do nothing.
+    const itemsSnap = await itemsCol.get();
+    if(itemsSnap.empty) return;
+
+    const ok = window.confirm("Weet je zeker dat je de hele lijst wilt leegmaken? Je kunt dit ongedaan maken.");
+    if(!ok) return;
+
+    // Snapshot current items and active meals to enable Undo
+    const prevItems = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    let prevMeals = [];
+    try {
+      const st = await stateDoc.get();
+      prevMeals = (st.exists && Array.isArray(st.data().activeMeals)) ? st.data().activeMeals : [];
+    } catch(e){ prevMeals = []; }
+
+    // Perform clear
     await cloudClearList();
+
+    // Reset local UI toggles
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".weekly-group").forEach(card => {
       card.classList.remove("open");
-      card.querySelector(".weekly-group__header").classList.remove("active");
-      card.querySelector(".weekly-group__chev").textContent = "►";
+      const header = card.querySelector(".weekly-group__header");
+      const chev = card.querySelector(".weekly-group__chev");
+      if(header) header.classList.remove("active");
+      if(chev) chev.textContent = "►";
     });
     updateCounter();
+
+    // Offer Undo via global snackbar
+    if(window.GrocifyUndo && typeof window.GrocifyUndo.show === "function"){
+      window.GrocifyUndo.show("Lijst geleegd", async () => {
+        // Restore items and meal state
+        const batch = firebase.firestore().batch();
+        prevItems.forEach(it => {
+          const ref = itemsCol.doc(it.id);
+          const data = Object.assign({}, it);
+          // Remove server timestamp fields that would error on set
+          delete data.updatedAt;
+          batch.set(ref, data, { merge: true });
+        });
+        await batch.commit();
+        try{
+          await stateDoc.set({ activeMeals: prevMeals }, { merge: true });
+        }catch(e){ console.warn("Restore meals failed", e); }
+      });
+    }
   });
 }
 

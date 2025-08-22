@@ -293,27 +293,66 @@ dialog{
 
 /* Override legacy floating button styles; use tray instead */
 .fab, .clear-list{
-  position: static !important;
-  inset: auto !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-
-  border-radius: 50% !important;
-  width: 48px !important;
-  height: 48px !important;
-  padding: 0 !important;
-
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px !important;
-  line-height: 1;
+  width: 100%;
+  display: block;
+  margin: 16px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
 }
+.clear-list:hover{ background:#f8fafc; color: var(--text); }
 .fab{ background: var(--accent) !important; color:#fff !important; }
-.clear-list{ background: var(--danger) !important; color:#fff !important; }
+.clear-list{
+  width: 100%;
+  display: block;
+  margin: 16px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+}
+.clear-list:hover{ background:#f8fafc; color: var(--text); }
 
 /* A11y helpers */
 .sr-only{
   position:absolute; width:1px; height:1px; padding:0; margin:-1px;
   overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* Snackbar */
+#snackbar{
+  position: fixed;
+  left: 0; right: 0; bottom: calc(72px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  z-index: 300;
+  pointer-events: none;
+}
+.snackbar{
+  pointer-events: all;
+  display: inline-flex;
+  gap: 16px;
+  align-items: center;
+  background: rgba(17, 24, 39, 0.95);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+  max-width: 92vw;
+}
+.snackbar__label{ font-size: .95rem; }
+.snackbar__btn{
+  border: none;
+  background: transparent;
+  color: #fff;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
 }

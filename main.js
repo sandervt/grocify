@@ -3,6 +3,47 @@ import { initListFeature } from "./features/list.js";
 import { initRecipesFeature } from "./features/recipes.js";
 import { initStoresFeature } from "./features/stores.js";
 
+
+// MVP STEP-1: Simple global Undo snackbar utility
+(function(){
+  const SNACK_ID = 'snackbar';
+  function ensureHost(){
+    let el = document.getElementById(SNACK_ID);
+    if(!el){
+      el = document.createElement('div');
+      el.id = SNACK_ID;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  let timer = null;
+  window.GrocifyUndo = {
+    show(label, onUndo){
+      const host = ensureHost();
+      host.innerHTML = '';
+      const bar = document.createElement('div');
+      bar.className = 'snackbar';
+      const msg = document.createElement('span');
+      msg.className = 'snackbar__label';
+      msg.textContent = label;
+      const btn = document.createElement('button');
+      btn.className = 'snackbar__btn';
+      btn.textContent = 'Ongedaan maken';
+      btn.addEventListener('click', async () => {
+        clearTimeout(timer);
+        timer = null;
+        host.innerHTML = '';
+        try{ await onUndo?.(); }catch(e){ console.error('Undo failed', e); }
+      });
+      bar.appendChild(msg);
+      bar.appendChild(btn);
+      host.appendChild(bar);
+      clearTimeout(timer);
+      timer = setTimeout(()=> { host.innerHTML = ''; }, 3000);
+    }
+  };
+})();
+
 function initRouter(){
   const TABS = ["list","recipes","stores"];
   const DEFAULT_TAB = "list";
