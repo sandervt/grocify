@@ -15,7 +15,7 @@ export const MEAL_DATA = {
 export const WEEKLY_GROUPS = {
   "Ontbijt & Lunch": ["Brood","Pindakaas","Hagelslag","Sojayoghurt","Havermout","Havermelk","Cruesli","Hummus","Rozijnen (50gr)"],
   "Toiletartikelen": ["Toiletpapier","Zeep","Wasmiddel","Shampoo","Tandpasta","Afwasmiddel","Keukenpapier"],
-  "Vers": ["Blauwe Bessen","Bananen","Avocado","Avocado","Avocado","Avocado"],
+  "Vers": ["Blauwe Bessen","Bananen","Avocado"],
   "Meisjes": ["Groenvoer","Hooi","Brokjes"],
   "Baby": ["Luiers","Babydoekjes","Kunstvoeding"],
   "Appelschilletjes": ["Chocola","Chips","Big Hit","Drop","Apekoppen"]
