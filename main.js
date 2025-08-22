@@ -44,7 +44,7 @@ import { initStoresFeature } from "./features/stores.js";
   };
 })();
 
-// ===== Bottom Sheet Controller (STEP-2) =====
+// ===== Bottom Sheet Controller (STEP-2/3) =====
 const Composer = (() => {
   let root, panel, scrim, input, closeBtn;
 
@@ -62,8 +62,11 @@ const Composer = (() => {
     if (!ensure()) return;
     root.classList.add('open');
     // Small delay to allow paint before focusing
-    setTimeout(() => input?.focus(), 50);
-    // Trap a minimal Esc to close
+    setTimeout(() => {
+      input?.focus();
+      // STEP-3: let others refresh suggestions on open
+      document.dispatchEvent(new CustomEvent('composer:open'));
+    }, 50);
     window.addEventListener('keydown', onKey);
   }
 
@@ -71,7 +74,6 @@ const Composer = (() => {
     if (!ensure()) return;
     root.classList.remove('open');
     window.removeEventListener('keydown', onKey);
-    // Return focus to FAB for good a11y flow
     document.getElementById('fabAdd')?.focus();
   }
 
@@ -83,19 +85,18 @@ const Composer = (() => {
     if (!ensure()) return;
     scrim?.addEventListener('click', close);
     closeBtn?.addEventListener('click', close);
-    // Prevent scroll bleed
     panel?.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
   }
 
   return { open, close, wire };
 })();
 
-// Call once at startup
 document.addEventListener('DOMContentLoaded', () => {
   Composer.wire();
   const fab = document.getElementById('fabAdd');
   fab?.addEventListener('click', () => Composer.open());
 });
+
 
 function initRouter(){
   const TABS = ["list","recipes","stores"];

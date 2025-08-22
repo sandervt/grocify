@@ -8,6 +8,27 @@ let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 
+/** Recents (STEP-3) */
+const RECENTS_KEY = "grocify_recents_v1";
+const RECENTS_MAX = 12;
+function loadRecents(){
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(Boolean) : [];
+  } catch { return []; }
+}
+function saveRecents(list){
+  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, RECENTS_MAX))); } catch {}
+}
+function pushRecent(name){
+  const n = (name || "").trim();
+  if(!n) return;
+  const list = loadRecents().filter(x => x.toLowerCase() !== n.toLowerCase());
+  list.unshift(n);
+  saveRecents(list);
+}
+
 /** Public for Stores feature to re-render after active store change */
 window.renderList = renderList;
 
@@ -55,6 +76,9 @@ export function initListFeature(){
   wireAddDialog();
   wireClearList();
   setClearCtaVisible(false);
+
+  // Refresh suggestions on composer open (STEP-3)
+  document.addEventListener('composer:open', () => refreshSuggestions());
 }
 
 /* ---------- Known items pool ---------- */
@@ -280,42 +304,60 @@ function renderList(){
   });
 }
 
-/* ---------- Details / search / add ---------- */
-function wireDetailsSections(){
+/* ---------- Composer: suggestions & add ---------- */
+function refreshSuggestions(){
   const input = document.getElementById("addInput");
-  const list  = document.getElementById("suggestions"); // fixed id
+  const list  = document.getElementById("suggestions");
   if(!input || !list) return;
 
-  input.addEventListener("input", () => {
-    const q = input.value.trim();
-    list.innerHTML = "";
-    if (!q) return;
+  const q = (input.value || "").trim();
+  list.innerHTML = "";
 
-    const suggestions = suggestMatches(q, KNOWN_ITEMS, 12);
-    suggestions.forEach(s => {
+  if (!q) {
+    // Show recents as chips
+    const recents = loadRecents();
+    if (recents.length === 0) return;
+    recents.forEach(name => {
       const li = document.createElement("li");
-      li.textContent = s;
-      li.addEventListener("click", async () => {
-        input.value = s;
+      li.className = "suggestion-chip";
+      li.textContent = name;
+      li.addEventListener("click", () => {
+        input.value = name;
         input.focus();
       });
       list.appendChild(li);
     });
+    return;
+  }
+
+  // Show type-ahead matches (parity with before)
+  const suggestions = suggestMatches(q, KNOWN_ITEMS, 12);
+  suggestions.forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = s;
+    li.addEventListener("click", () => {
+      input.value = s;
+      input.focus();
+    });
+    list.appendChild(li);
   });
 }
+
+function wireDetailsSections(){
+  const input = document.getElementById("addInput");
+  if(!input) return;
+
+  // Initial render (for when composer opens later)
+  refreshSuggestions();
+
+  input.addEventListener("input", () => refreshSuggestions());
+}
+
 function wireAddDialog(){
   const form  = document.getElementById("addForm");
   const input = document.getElementById("addInput");
   const ok    = document.getElementById("addConfirm");
-  const fab   = document.getElementById("fabAdd");
-  const closeBtn = document.getElementById("sheetClose");
-  if(!form || !input || !ok || !fab) return;
-
-  // Open handled in main.js (Composer.open)
-  // Close handler for after adding (we keep sheet open in STEP-2; parser/auto-close comes later)
-  closeBtn?.addEventListener("click", () => {
-    // nothing else, main.js closes via controller
-  });
+  if(!form || !input || !ok) return;
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -326,9 +368,9 @@ function wireAddDialog(){
     const raw = input.value.trim();
     if(!raw) return;
     await addItemFromRaw(raw);
+    pushRecent(raw); // STEP-3: remember for recents
     input.value = "";
-    const list = document.getElementById("suggestions");
-    if (list) list.innerHTML = "";
+    refreshSuggestions();
     input.focus();
   });
 }
