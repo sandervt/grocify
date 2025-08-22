@@ -258,14 +258,30 @@ function setClearCtaVisible(hasItems){
 
 function renderList(){
   const ul = document.getElementById("shoppingList");
-  if(!ul) return;
+  if (!ul) return;
+
+  // Clear current DOM
   ul.innerHTML = "";
+
+  // One global click handler to close any open overflow menus
+  if (window.__grocifyCloseMenus) {
+    document.removeEventListener("click", window.__grocifyCloseMenus);
+  }
+  window.__grocifyCloseMenus = () => {
+    document.querySelectorAll(".item-row .menu").forEach(m => m.setAttribute("hidden",""));
+    document.querySelectorAll(".item-row .btn-overflow[aria-expanded='true']")
+      .forEach(b => b.setAttribute("aria-expanded","false"));
+  };
+  document.addEventListener("click", window.__grocifyCloseMenus);
+
   const order = (typeof window.currentSectionOrder === "function")
     ? window.currentSectionOrder()
     : SECTION_ORDER;
 
   order.forEach(section => {
-    const items = Object.keys(activeItems).filter(i => (ITEM_TO_SECTION[i] || inferSection(i)) === section);
+    const items = Object.keys(activeItems)
+      .filter(name => (ITEM_TO_SECTION[name] || inferSection(name)) === section);
+
     if (items.length === 0) return;
 
     const li = document.createElement("li");
@@ -273,34 +289,79 @@ function renderList(){
     li.innerHTML = `
       <div class="section__header">
         <h3>${section}</h3>
-        <span class="section__count">${items.filter(i => !activeItems[i].checked).length}/${items.length}</span>
+        <span class="section__count">
+          ${items.filter(n => !activeItems[n].checked).length}/${items.length}
+        </span>
       </div>
       <ul class="section__items"></ul>
     `;
     const inner = li.querySelector(".section__items");
+
     items.sort((a,b) => a.localeCompare(b)).forEach(name => {
+      const data = activeItems[name];
       const row = document.createElement("li");
       row.className = "item-row";
-      const data = activeItems[name];
-      const qtyStr = data.count > 1 ? `×${data.count}` : "";
+
+      const qtyNum  = Number(data.count || 1);
       const unitStr = data.unit ? ` <span class="unit">(${data.unit})</span>` : "";
+
       row.innerHTML = `
-        <label class="checkbox">
-          <input type="checkbox" ${data.checked ? "checked" : ""}/>
-          <span class="label">${name}${unitStr}</span>
-          <span class="qty">${qtyStr}</span>
-        </label>
+        <div class="item-row__main">
+          <label class="checkbox">
+            <input type="checkbox" ${data.checked ? "checked" : ""}/>
+            <span class="label">${name}${unitStr}</span>
+          </label>
+        </div>
+        <div class="item-row__actions">
+          <button class="btn-qty minus" aria-label="Verlaag aantal">−</button>
+          <span class="qty">${qtyNum}</span>
+          <button class="btn-qty plus" aria-label="Verhoog aantal">＋</button>
+
+          <div class="overflow">
+            <button class="btn-overflow" aria-haspopup="menu" aria-expanded="false" aria-label="Meer acties">⋮</button>
+            <div class="menu" role="menu" hidden>
+              <button class="menu__item delete" role="menuitem">Verwijderen</button>
+            </div>
+          </div>
+        </div>
       `;
-      const cb = row.querySelector("input[type=checkbox]");
+
+      // Checkbox toggle
+      const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
         await cloudToggleCheck(name, cb.checked);
       });
+
+      // Qty controls
+      row.querySelector(".btn-qty.plus")
+        .addEventListener("click", () => adjustQty(name, +1));
+      row.querySelector(".btn-qty.minus")
+        .addEventListener("click", () => adjustQty(name, -1));
+
+      // Overflow menu
+      const ovBtn = row.querySelector(".btn-overflow");
+      const menu  = row.querySelector(".menu");
+      ovBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const willOpen = menu.hasAttribute("hidden");
+        // close all others first
+        window.__grocifyCloseMenus();
+        if (willOpen) {
+          menu.removeAttribute("hidden");
+          ovBtn.setAttribute("aria-expanded","true");
+        }
+      });
+
+      row.querySelector(".menu__item.delete")
+        .addEventListener("click", () => deleteItemWithUndo(name));
+
       inner.appendChild(row);
     });
 
     ul.appendChild(li);
   });
 }
+
 
 /* ---------- Parser + chips (STEP-4) ---------- */
 function parseDraft(raw){
@@ -684,3 +745,35 @@ function showUndo(label, onUndo){
     window.GrocifyUndo.show(label, onUndo);
   }
 }
+
+// ===== STEP-6: Qty & delete helpers =====
+async function adjustQty(name, delta){
+  const ref = itemsCol.doc(slug(name));
+  // Use local cache for speed; fallback to fetch
+  const current = activeItems[name]?.count ?? (await ref.get()).data()?.count ?? 1;
+
+  if (delta < 0 && current <= 1) {
+    // Removing the last one = delete with Undo
+    return deleteItemWithUndo(name);
+  }
+
+  await ref.set({ count: inc(delta) }, { merge: true });
+}
+
+async function deleteItemWithUndo(name){
+  const ref = itemsCol.doc(slug(name));
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const prev = { id: snap.id, ...snap.data() };
+
+  await ref.delete();
+
+  // Offer Undo to restore full previous doc
+  showUndo(`Verwijderd: ${name}`, async () => {
+    const data = { ...prev };
+    // Remove server-only timestamp fields that could conflict
+    delete data.updatedAt;
+    await ref.set(data, { merge: true });
+  });
+}
+
