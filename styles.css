@@ -1,3 +1,6 @@
+/* Prevent accidental horizontal overflow on mobile */
+html, body { overflow-x: hidden; }
+
 :root {
 --bg: #f1f5f9;
 --card: #ffffff;
@@ -17,18 +20,26 @@ body{
   padding: 0;
 }
 .app{
-  width: min(720px, calc(100vw - 40px));
+  max-width: 720px;
   margin-left: auto;
   margin-right: auto;
 
-  background:var(--card);
-  border-radius:var(--radius);
-  box-shadow:0 4px 16px rgba(0,0,0,0.08);
-  padding:20px;
-  position:relative;
-  z-index:1;
+  /* vertical gutters */
+  padding-top: 20px;
+  padding-bottom: 20px;
 
-  padding-bottom: 130px;
+  /* horizontal gutters live INSIDE the card */
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  position: relative;
+  z-index: 1;
+
+  /* keep extra space for bottom bar if you had it before */
+  padding-bottom: 130px; /* only if you previously had extra bottom padding */
 }
 @supports (padding: max(0px)) {
   .app{
