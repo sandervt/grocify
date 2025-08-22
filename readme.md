@@ -163,3 +163,110 @@
 ---
 
 If you want, I can convert **MVP stories (1–5)** into Jira-style tickets with ultra-brief acceptance tests next, or draft the **UI skeleton spec** for the bottom-sheet composer.
+
+
+
+
+Love it — let’s ditch tickets and use a tight **build–show–verify** loop. Here’s a lightweight process that fits your “no big bang” ask and lets you check each increment fast.
+
+# How we’ll work (repeat this per step)
+
+1. **Pick the next tiny step** (≤ \~15 min of code): I’ll state scope, files touched, and acceptance checks.
+2. **Ship a patch**: I’ll post a small **diff** + the **updated files** (so you can drop them into your folder).
+3. **Run the micro test script**: 4–6 taps/keystrokes you can do in 30–60s to verify.
+4. **You say “ok” or “tweak X”** → I iterate.
+5. Lock when ✅ and move to the next step.
+
+To make review easy, I’ll tag code with comments like `// MVP STEP-1` so you can find changes fast.
+
+# Dev toggle (so changes don’t disrupt you)
+
+* I’ll add a **dev flag** you can toggle at runtime:
+
+  * In console: `window.GROCIFY_FLAGS = { newComposer: true }`
+  * Or add `#newui=1` to the URL.
+* Old behavior remains available (`newComposer: false`) until we finish MVP.
+
+---
+
+# Step plan to reach MVP (Direction 1)
+
+## STEP 1 — Move “Clear list” to bottom CTA (no visuals shock)
+
+**Scope:** Remove floating trash FAB; add low-emphasis **“Clear entire list…”** at bottom when list is non-empty; confirm + Undo.
+**Files:** `index.html`, `styles.css`, `list.js`, `main.js` (Undo shell).
+**Checks:**
+
+* No trash FAB on screen.
+* Bottom CTA appears only when list has items.
+* Clear → confirm → list empties → **Undo** restores items + checked states.
+
+## STEP 2 — Single “+” FAB and remove the old add dialog
+
+**Scope:** Keep one **+**. Clicking opens the same add flow you have today (temporary), but via our **new bottom sheet container** (empty shell).
+**Files:** `index.html`, `styles.css` (sheet shell), `main.js` (open/close), `list.js` (wire).
+**Checks:**
+
+* One **+** in bottom-right.
+* Tap **+** → bottom sheet slides up; list stays visible behind it.
+* Close via swipe down / Esc / tapping scrim.
+
+## STEP 3 — Bottom-sheet “Item” mode with suggestions (parity with today)
+
+**Scope:** Move the current “add item” input + suggestions **into** the bottom sheet. No parser yet.
+**Files:** `main.js` (composer UI), `styles.css` (chips, input), `catalog.js` (reuse).
+**Checks:**
+
+* Type + Enter adds an item to correct section like today.
+* Suggestions row shows “last N” items; tapping adds instantly (Undo visible).
+
+## STEP 4 — Quick-add parser + inline chips (qty, unit, section)
+
+**Scope:** Parse `3x bananas`, `500g pasta`, `milk 2L`; show **inline editable chips** (name/qty/unit/section). Units are **free text**. Default qty=1.
+**Files:** `main.js` (parser, chip editor), `styles.css` (inline token UI).
+**Checks:**
+
+* `3x bananas` → bananas, qty 3, Produce (if mapped).
+* `pasta 500g` → pasta, 500 g, Pantry.
+* Unrecognized unit still saved as unit text.
+* Tapping a chip lets you edit; Enter to save/add.
+
+## STEP 5 — Global Undo framework (add, delete, clear)
+
+**Scope:** Implement a tiny **Undo stack**; show snackbar for \~3s; wire to add/clear.
+**Files:** `main.js` (UndoStack), `styles.css` (snackbar).
+**Checks:**
+
+* After add/clear/delete, an Undo appears; clicking it reverts exactly the last change.
+
+## STEP 6 — Per-item overflow menu + qty −/+ on row
+
+**Scope:** Add `⋮` per row with **Delete**; inline `−  qty  +`. Delete is **only** via overflow (per your call).
+**Files:** `list.js`, `styles.css`.
+**Checks:**
+
+* `+` increments qty, `−` decrements; at 0, item is removed with Undo.
+* `⋮ → Delete` removes with Undo.
+* No inline trash icons anywhere.
+
+## STEP 7 — Composer polish
+
+**Scope:** Auto-collapse after 3s inactivity; keyboard flows (Enter add, Esc close); focus returns to FAB; ARIA roles + live announcements.
+**Files:** `main.js`, `styles.css`.
+**Checks:**
+
+* After adding, do nothing → sheet collapses to dock after 3s.
+* Screen reader announces “Added N item(s) to Section”.
+
+---
+
+# What you’ll get each step
+
+* A short **“What changed”** note.
+* A **diff block** and **updated file(s)** to drop in.
+* A **30–60s test script** (tap-by-tap).
+* A **rollback note** (toggle `newComposer: false`).
+
+---
+
+If that works for you, say **“Go STEP 1”** and I’ll deliver the first patch (diff + files + quick test) in my next message.
