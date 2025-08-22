@@ -9,24 +9,23 @@
 --muted: #64748b;
 --radius: 12px;
 }
-body {
-font-family: "Inter", system-ui, sans-serif;
-margin: 0;
-background: var(--bg);
-color: var(--text);
-display: flex;
-justify-content: center;
-padding: 20px;
+body{
+font-family:'Inter', system-ui, sans-serif;
+margin:0;
+background:var(--bg);
+color:var(--text);
+padding:20px;
 }
-.app {
-width: 100%;
-max-width: 720px;
-background: var(--card);
-border-radius: var(--radius);
-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-padding: 20px;
-position: relative;
-z-index: 1;
+.app{
+width:100%;
+max-width:720px;
+margin:0 auto;           /* center without flex */
+background:var(--card);
+border-radius:var(--radius);
+box-shadow:0 4px 16px rgba(0,0,0,0.08);
+padding:20px;
+position:relative;
+z-index:1;
 }
 h1 {
 margin-top: 0;
