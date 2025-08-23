@@ -121,6 +121,17 @@ details.section[open] > summary{ background:#eaefff; }
 .meal-row::-webkit-scrollbar{ height:6px; }
 .meal-row::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:6px; }
 
+/* Allow horizontal swipes in the meals row even inside the sheet */
+.meal-row {
+  touch-action: pan-x;
+  overscroll-behavior-inline: contain;
+}
+
+/* Ensure the bottom sheet itself can scroll vertically */
+.sheet__panel {
+  overflow-y: auto;
+}
+
 /* --- Weekly accordion cards --- */
 .weekly-accordion{ display:grid; gap:12px; }
 .weekly-group{

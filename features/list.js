@@ -1,5 +1,5 @@
 import { itemsCol, stateDoc, recipesCol, inc, arrAdd, arrDel, slug } from "../firebase.js";
-import { SECTION_ORDER, MEAL_DATA, WEEKLY_GROUPS, ITEM_TO_SECTION, inferSection, suggestMatches } from "../data/catalog.js";
+import { SECTION_ORDER, MEAL_DATA, ITEM_TO_SECTION, inferSection, suggestMatches } from "../data/catalog.js";
 
 /** Local state */
 let activeMeals = new Set();            // from uiState.activeMeals
@@ -64,7 +64,6 @@ export function initListFeature(){
   // UI wiring
   recomputeCombinedMeals();
   renderMeals();
-  renderWeeklies();
   updateCounter();
   wireDetailsSections();
   wireAddDialog();
@@ -87,86 +86,6 @@ function getKnownItems(){
 }
 function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
 
-/* ---------- Weekly selections ---------- */
-/* ---------- Weekly selections (uses #weeklyAccordion) ---------- */
-function renderWeeklies(){
-  const container = document.getElementById("weeklyAccordion");
-  if(!container){ console.warn("renderWeeklies: #weeklyAccordion not found"); return; }
-
-  container.innerHTML = "";
-  Object.entries(WEEKLY_GROUPS || {}).forEach(([group, items]) => {
-    const card = document.createElement("div");
-    card.className = "weekly-group";
-
-    const header = document.createElement("div");
-    header.className = "weekly-group__header";
-    header.innerHTML = `
-      <span class="weekly-group__chev">►</span>
-      <span class="weekly-group__title">${group}</span>
-      <span class="weekly-group__badge">0</span>
-    `;
-    header.addEventListener("click", () => {
-      card.classList.toggle("open");
-      header.classList.toggle("active");
-      const chev = header.querySelector(".weekly-group__chev");
-      if (chev) chev.textContent = card.classList.contains("open") ? "▼" : "►";
-    });
-
-    const content = document.createElement("div");
-    content.className = "weekly-group__content";
-    (items || []).forEach(name => {
-      const btn = document.createElement("button");
-      btn.className = "chip";
-      btn.textContent = name;
-      btn.addEventListener("click", async () => {
-        const turnOn = !btn.classList.contains("active");
-        btn.classList.toggle("active", turnOn);
-        if (turnOn)  { await cloudAddItem(name, inferSection(name), group, 1, undefined); }
-        else         { await cloudRemoveSource(name, group); }
-        updateAllWeeklyBadges();
-      });
-      content.appendChild(btn);
-    });
-
-    card.appendChild(header);
-    card.appendChild(content);
-    container.appendChild(card);
-  });
-
-  syncWeeklySelectionsFromCloud();
-  updateAllWeeklyBadges();
-}
-
-function updateAllWeeklyBadges(){
-  const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
-  const map = {};
-  for (const data of Object.values(activeItems)) {
-    for (const src of data.sources) {
-      if (weeklyGroups.has(src)) map[src] = (map[src] || 0) + 1;
-    }
-  }
-  document.querySelectorAll(".weekly-group").forEach(card => {
-    const title = card.querySelector(".weekly-group__title")?.textContent ?? "";
-    const badge = card.querySelector(".weekly-group__badge");
-    const count = map[title] || 0;
-    if (badge) badge.textContent = count;
-  });
-}
-function syncWeeklySelectionsFromCloud(){
-  const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
-  const active = {};
-  for (const [name, data] of Object.entries(activeItems)) {
-    for (const src of data.sources) {
-      if (weeklyGroups.has(src)) active[`${src}__${name}`] = true;
-    }
-  }
-  document.querySelectorAll(".weekly-group__content button").forEach(btn => {
-    const group = btn.closest(".weekly-group")?.querySelector(".weekly-group__title")?.textContent ?? "";
-    const key = `${group}__${btn.textContent}`;
-    btn.classList.toggle("active", !!active[key]);
-  });
-}
-
 /* ---------- Meals (flat chips in #mealRow, no nesting) ---------- */
 function recomputeCombinedMeals(){
   const normalize = (arr) =>
@@ -184,12 +103,12 @@ function recomputeCombinedMeals(){
   window.__debugCombinedMeals = combinedMeals; // optional console sanity check
 }
 
+/* ---------- Meals (modal: flat chips in #mealRowModal) ---------- */
 function renderMeals(){
-  const wrap = document.getElementById("mealRow");
-  if(!wrap){ console.warn("renderMeals: #mealRow not found"); return; }
-
-  // Container itself is the scroller (see .meal-row CSS in styles)
+  const wrap = document.getElementById("mealRowModal");
+  if (!wrap) return;               // only render meals inside the add modal
   wrap.innerHTML = "";
+  wrap.classList.add("meal-row");  // reuse existing horizontal scroller styling
 
   const entries = Object.entries(combinedMeals || {});
   if (entries.length === 0) {
@@ -200,47 +119,36 @@ function renderMeals(){
     return;
   }
 
-  // Ensure the container has the correct class for styling
-  wrap.classList.add("meal-row");
-
   entries
     .sort(([a],[b]) => a.localeCompare(b))
-    .forEach(([name/*, items*/]) => {
+    .forEach(([name]) => {
       const btn = document.createElement("button");
       btn.className = "chip";
       btn.dataset.meal = name;
       btn.textContent = name;
-
-      // Reflect state
       if (activeMeals.has(name)) btn.classList.add("active");
 
-      // Toggle on click
       btn.addEventListener("click", async () => {
         const turnOn = !btn.classList.contains("active");
         btn.classList.toggle("active", turnOn);
-        if (turnOn) { await cloudAddRecipe(name); activeMeals.add(name); }
+        if (turnOn) { await cloudAddRecipe(name);  activeMeals.add(name); }
         else        { await cloudRemoveRecipe(name); activeMeals.delete(name); }
         await saveMealState();
-        updateCounter();
+        updateCounter(); // no-op if #mealCounter isn't present; safe
       });
 
       wrap.appendChild(btn);
     });
-
-  updateCounter();
 }
 
 function reflectMealPillsFromState(){
-  const root = document.getElementById("mealRow");
-  if(!root) return;
-  // Only look at the actual chips inside #mealRow
-  const buttons = root.querySelectorAll("button[data-meal]");
-  buttons.forEach(btn => {
+  const root = document.getElementById("mealRowModal");
+  if (!root) return;
+  root.querySelectorAll("button[data-meal]").forEach(btn => {
     const name = btn.dataset.meal || btn.textContent || "";
     btn.classList.toggle("active", activeMeals.has(name));
   });
 }
-
 
 /* ---------- Header counters ---------- */
 function updateCounter(){
@@ -248,17 +156,6 @@ function updateCounter(){
   if(!el) return;
   const n = activeMeals.size;
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
-}
-function updateWeeklyHeaderCounter(){
-  const el = document.getElementById("weeklyCounter");
-  if(!el) return;
-  const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
-  let count = 0;
-  for (const data of Object.values(activeItems)) {
-    const hasWeeklySource = [...data.sources].some(src => weeklyGroups.has(src));
-    if (hasWeeklySource) count++;
-  }
-  el.textContent = count === 1 ? "1 item" : `${count} items`;
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
@@ -272,9 +169,6 @@ function setActiveFromCloud(cloudDocs){
   });
   refreshKnownItems();
   renderList();
-  syncWeeklySelectionsFromCloud();
-  updateAllWeeklyBadges();
-  updateWeeklyHeaderCounter();
   setClearCtaVisible(cloudDocs.length > 0);
 }
 

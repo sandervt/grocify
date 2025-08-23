@@ -24,27 +24,6 @@
         <!-- TAB: LIST (current UI) -->
         <section id="tab-list" class="tabpage active">
             <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
-
-            <details id="sec-meals" class="section" open>
-                <summary>
-                    <span class="section__chev">▼</span> 🍲 Maaltijden
-                    <span id="mealCounter" class="section__badge">0 dagen</span>
-                </summary>
-                <div class="section__body">
-                    <div class="meal-row" id="mealRow"></div>
-                </div>
-            </details>
-
-            <details id="sec-weeklies" class="section" open>
-                <summary>
-                    <span class="section__chev">▼</span> 📦 Weekboodschappen
-                    <span id="weeklyCounter" class="section__badge">0 items</span>
-                </summary>
-                <div class="section__body">
-                    <div id="weeklyAccordion" class="weekly-accordion"></div>
-                </div>
-            </details>
-
             <ul class="shopping-list" id="shoppingList"></ul>
 
             <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
@@ -53,25 +32,35 @@
             <div id="composer" aria-hidden="true">
               <div class="sheet__scrim" id="sheetScrim" tabindex="-1" aria-hidden="true"></div>
               <div class="sheet__panel" role="dialog" aria-labelledby="sheetTitle" aria-modal="true">
-                <div class="sheet__handle" aria-hidden="true"></div>
-                <h2 id="sheetTitle" class="sr-only">Item toevoegen</h2>
+              <div class="sheet__handle" aria-hidden="true"></div>
+              <h2 id="sheetTitle" class="sr-only">Item toevoegen</h2>
 
-                <!-- Your existing add UI lives here, IDs preserved -->
-                <form id="addForm" class="sheet__form" autocomplete="off">
-                  <label for="addInput" class="sr-only">Voeg item toe</label>
-                  <input id="addInput" type="text" inputmode="text" placeholder="Bijv. melk 2L of 3x bananen" />
-                  
-                  <!-- Parsed tokens (STEP-4) -->
-                  <div id="parsedChips" class="parsed-chips" aria-live="polite" aria-atomic="true"></div>
-                  
-                  <ul id="suggestions" class="suggestions"></ul>
+              <!-- 1) MEALS (top) -->
+              <section id="modalMeals" class="section" aria-label="Maaltijden">
+                <h3 class="section-label">🍲 Maaltijden</h3>
+                <div class="meal-row" id="mealRowModal"></div>
+              </section>
 
-                  <div class="sheet__actions">
-                    <button type="button" id="addConfirm" class="btn btn-primary">Toevoegen</button>
-                    <button type="button" id="sheetClose" class="btn btn-ghost">Sluiten</button>
-                  </div>
-                </form>
-              </div>
+              <!-- 2) SUGGESTIONS (middle) -->
+              <section id="modalSuggestions" class="section" aria-label="Suggesties & Favorieten">
+                <h3 class="section-label">🔍 Suggesties &amp; Favorieten</h3>
+                <ul id="suggestions" class="suggestions"></ul>
+              </section>
+
+              <!-- 3) INPUT (bottom) -->
+              <form id="addForm" class="sheet__form" autocomplete="off">
+                <label for="addInput" class="sr-only">Voeg item toe</label>
+                <input id="addInput" type="text" inputmode="text" placeholder="Bijv. melk 2L of 3x bananen" />
+
+                <!-- Parsed tokens (qty/unit/section chips) -->
+                <div id="parsedChips" class="parsed-chips" aria-live="polite" aria-atomic="true"></div>
+
+                <div class="sheet__actions">
+                  <button type="button" id="addConfirm" class="btn btn-primary">Toevoegen</button>
+                  <button type="button" id="sheetClose" class="btn btn-ghost">Sluiten</button>
+                </div>
+              </form>
+            </div>
             </div>
 
             <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
