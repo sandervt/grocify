@@ -249,7 +249,10 @@ dialog{
 .add-form input{
   width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:10px; margin-bottom:8px;
 }
-.suggestions{ display:grid; gap:6px; max-height:220px; overflow:auto; }
+.suggestions { 
+  list-style: none; margin: 0; padding: 0 8px 8px; 
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
 .suggestions button{
   text-align:left; border:1px solid #e2e8f0; background:#fff; border-radius:8px; padding:8px 10px; cursor:pointer;
 }
@@ -258,6 +261,29 @@ dialog{
 .actions button{ padding:8px 12px; border:none; border-radius:8px; }
 #addConfirm{ background:var(--primary); color:#fff; }
 #addCancel{ background:#e2e8f0; }
+.suggestions li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 600;
+}
+/* The label part you tap to add */
+.suggestions .chip-text {
+  border: 0; background: transparent; padding: 0; margin: 0;
+  cursor: pointer; font: inherit; color: inherit;
+}
+
+/* The star you tap to favorite (doesn't add) */
+.suggestions .star {
+  border: 0; background: transparent; padding: 0; margin: 0;
+  cursor: pointer; font-size: 14px; line-height: 1; opacity: .55;
+}
+.suggestions .star.fav { opacity: 1; }
+.suggestions .star:focus { outline: 2px solid var(--primary-hover); outline-offset: 2px; }
 
 /* --- Tabs / pages --- */
 .tabpage{ display:none; }
@@ -339,35 +365,6 @@ dialog{
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 200;
 }
-
-/* Override legacy floating button styles; use tray instead */
-.fab, .clear-list{
-  width: 100%;
-  display: block;
-  margin: 16px 0 8px;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  text-align: center;
-}
-.clear-list:hover{ background:#f8fafc; color: var(--text); }
-.fab{ background: var(--accent) !important; color:#fff !important; }
-.clear-list{
-  width: 100%;
-  display: block;
-  margin: 16px 0 8px;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  text-align: center;
-}
-.clear-list:hover{ background:#f8fafc; color: var(--text); }
 
 /* A11y helpers */
 .sr-only{
@@ -711,3 +708,42 @@ dialog{
 #modalMeals .section-label,
 #modalSuggestions,
 #composer .sheet__form { padding-left: 2px; padding-right: 2px; }
+
+/* Clear-list as an inline action at the bottom of the list */
+.clear-list {
+  position: static;           /* not fixed */
+  display: block;
+  width: 100%;
+  margin: 16px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: none;
+}
+.clear-list:hover { background:#f8fafc; color: var(--text); }
+
+/* Floating Action Button (FAB) — fixed bottom-right */
+.fab {
+  position: fixed !important;
+  right: 16px;
+  bottom: calc(72px + env(safe-area-inset-bottom) + 16px); /* above tabbar */
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 1100; /* above tabbar & list */
+}
+.fab:hover { background: var(--primary-hover); }
+.fab:focus { outline: 2px solid var(--primary-hover); outline-offset: 2px; }

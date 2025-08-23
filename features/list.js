@@ -23,6 +23,36 @@ function pushRecent(name){
   saveRecents(list);
 }
 
+// Favorites (persisted like Recents)
+const FAVS_KEY = "grocify_favs_v1";
+
+function loadFavs(){
+  try {
+    const raw = localStorage.getItem(FAVS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(Boolean) : [];
+  } catch { return []; }
+}
+function saveFavs(arr){
+  try {
+    const clean = [...new Set((arr || []).map(s => String(s).trim()).filter(Boolean))];
+    localStorage.setItem(FAVS_KEY, JSON.stringify(clean));
+  } catch {}
+}
+function isFav(name){
+  const n = String(name || "").trim().toLowerCase();
+  return loadFavs().some(x => String(x).trim().toLowerCase() === n);
+}
+function toggleFav(name){
+  const n = String(name || "").trim();
+  if (!n) return;
+  const favs = loadFavs();
+  const i = favs.findIndex(x => String(x).trim().toLowerCase() === n.toLowerCase());
+  if (i >= 0) favs.splice(i, 1);
+  else favs.unshift(n);
+  saveFavs(favs);
+}
+
 /** Public for Stores feature to re-render after active store change */
 window.renderList = renderList;
 
@@ -421,48 +451,65 @@ function refreshSuggestions(){
   const q = (input.value || "").trim();
   list.innerHTML = "";
 
-  if (!q) {
-    // Show recents as chips
-    const recents = loadRecents();
-    if (recents.length === 0) return;
-
-    recents.forEach(name => {
-      const li = document.createElement("li");
-      li.className = "suggestion-chip";
-      li.textContent = name;
-      li.addEventListener("click", async () => {
-        if (INSTANT_ADD_FROM_SUGGESTIONS) {
-          await quickAdd(name);
-        } else {
-          input.value = name;
-          input.focus();
-          refreshDraftChips();
-        }
-      });
-      list.appendChild(li);
-    });
-    return;
-  }
-
-  // Type-ahead matches
-  const matches = suggestMatches(q, KNOWN_ITEMS, 12);
-  matches.forEach(s => {
+  // Helper to render a chip with a star button
+  const renderChip = (name) => {
     const li = document.createElement("li");
-    li.className = "suggestion-item";
-    li.textContent = s;
-    li.addEventListener("click", async () => {
+    li.className = "suggestion-chip";
+
+    // clicking the text = add (or fill input)
+    const textBtn = document.createElement("button");
+    textBtn.type = "button";
+    textBtn.className = "chip-text";
+    textBtn.textContent = name;
+    textBtn.addEventListener("click", async () => {
       if (INSTANT_ADD_FROM_SUGGESTIONS) {
-        await quickAdd(s);
+        await quickAdd(name);
       } else {
-        input.value = s;
+        input.value = name;
         input.focus();
         refreshDraftChips();
       }
     });
-    list.appendChild(li);
-  });
-}
 
+    // star = toggle favorite (doesn't add)
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = "star" + (isFav(name) ? " fav" : "");
+    star.setAttribute("aria-label", "Markeer als favoriet");
+    star.textContent = isFav(name) ? "★" : "☆";
+    star.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFav(name);
+      // re-render to reflect new order/appearance
+      refreshSuggestions();
+    });
+
+    li.append(textBtn, star);
+    list.appendChild(li);
+  };
+
+  if (!q) {
+    // Favorites first, then Recents (deduped)
+    const favs = loadFavs();
+    const recents = loadRecents();
+    const seen = new Set();
+
+    favs.forEach(n => {
+      const key = String(n).toLowerCase();
+      if (key && !seen.has(key)) { seen.add(key); renderChip(n); }
+    });
+    recents.forEach(n => {
+      const key = String(n).toLowerCase();
+      if (key && !seen.has(key)) { seen.add(key); renderChip(n); }
+    });
+    return;
+  }
+
+  // Type-ahead matches (keep stars so you can pin from search)
+  const matches = suggestMatches(q, KNOWN_ITEMS, 12);
+  matches.forEach(s => renderChip(s));
+}
 
 function wireDetailsSections(){
   const input = document.getElementById("addInput");
@@ -530,48 +577,43 @@ async function addItemFromDraft(draft){
 function wireClearList(){
   const btn = document.getElementById("clearListBtn");
   if(!btn) return;
-  btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async () => {
     const snap = await itemsCol.get();
     if (snap.empty) return;
 
     const ok = window.confirm("Weet je zeker dat je de hele lijst wilt leegmaken? Je kunt dit ongedaan maken.");
-    if(!ok) return;
+    if (!ok) return;
 
     const prevItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     let prevMeals = [];
     try {
-      const st = await stateDoc.get();
-      prevMeals = (st.exists && Array.isArray(st.data().activeMeals)) ? st.data().activeMeals : [];
+        const st = await stateDoc.get();
+        prevMeals = (st.exists && Array.isArray(st.data().activeMeals)) ? st.data().activeMeals : [];
     } catch(e){ prevMeals = []; }
 
     await cloudClearList();
 
+    // Reset local UI states
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".weekly-group__content button").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".weekly-group").forEach(card => {
-      card.classList.remove("open");
-      const header = card.querySelector(".weekly-group__header");
-      const chev = card.querySelector(".weekly-group__chev");
-      if(header) header.classList.remove("active");
-      if(chev) chev.textContent = "►";
-    });
     updateCounter();
 
+    // Undo
     if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
-      window.GrocifyUndo.show("Lijst geleegd", async () => {
+        window.GrocifyUndo.show("Lijst geleegd", async () => {
         const batch = firebase.firestore().batch();
         prevItems.forEach(it => {
-          const ref = itemsCol.doc(it.id);
-          const data = Object.assign({}, it);
-          delete data.updatedAt;
-          batch.set(ref, data, { merge: true });
+            const ref = itemsCol.doc(it.id);
+            const data = Object.assign({}, it);
+            delete data.updatedAt;
+            batch.set(ref, data, { merge: true });
         });
         await batch.commit();
         try { await stateDoc.set({ activeMeals: prevMeals }, { merge: true }); }
         catch(e) { console.warn("Restore meals failed", e); }
-      });
+        });
     }
-  });
+    });
+
 }
 
 /* --- Unified floating tray (icon-only) --- */
