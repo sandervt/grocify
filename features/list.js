@@ -416,7 +416,7 @@ function makeChip(label, value, onEdit){
 function refreshSuggestions(){
   const input = document.getElementById("addInput");
   const list  = document.getElementById("suggestions");
-  if(!input || !list) return;
+  if (!input || !list) return;
 
   const q = (input.value || "").trim();
   list.innerHTML = "";
@@ -425,14 +425,19 @@ function refreshSuggestions(){
     // Show recents as chips
     const recents = loadRecents();
     if (recents.length === 0) return;
+
     recents.forEach(name => {
       const li = document.createElement("li");
       li.className = "suggestion-chip";
       li.textContent = name;
-      li.addEventListener("click", () => {
-        input.value = name;
-        input.focus();
-        refreshDraftChips();
+      li.addEventListener("click", async () => {
+        if (INSTANT_ADD_FROM_SUGGESTIONS) {
+          await quickAdd(name);
+        } else {
+          input.value = name;
+          input.focus();
+          refreshDraftChips();
+        }
       });
       list.appendChild(li);
     });
@@ -440,18 +445,24 @@ function refreshSuggestions(){
   }
 
   // Type-ahead matches
-  const suggestions = suggestMatches(q, KNOWN_ITEMS, 12);
-  suggestions.forEach(s => {
+  const matches = suggestMatches(q, KNOWN_ITEMS, 12);
+  matches.forEach(s => {
     const li = document.createElement("li");
+    li.className = "suggestion-item";
     li.textContent = s;
-    li.addEventListener("click", () => {
-      input.value = s;
-      input.focus();
-      refreshDraftChips();
+    li.addEventListener("click", async () => {
+      if (INSTANT_ADD_FROM_SUGGESTIONS) {
+        await quickAdd(s);
+      } else {
+        input.value = s;
+        input.focus();
+        refreshDraftChips();
+      }
     });
     list.appendChild(li);
   });
 }
+
 
 function wireDetailsSections(){
   const input = document.getElementById("addInput");
@@ -646,7 +657,18 @@ async function cloudClearList(){
   activeMeals = new Set();
   await saveMealState();
 }
-// ===== STEP-5: Undo helpers =====
+// ===== HELPERS =====
+// Toggle one-tap add for suggestion chips
+const INSTANT_ADD_FROM_SUGGESTIONS = true;
+
+async function quickAdd(name){
+  const draft = finalizeDraft({ name, qty: 1 });
+  await addItemFromDraft(draft);
+  announce(`Toegevoegd: ${name}`);
+  pushRecent(name);
+}
+
+// Undo helpers
 async function undoAddItem(name, qty, source){
   const ref = itemsCol.doc(slug(name));
   const snap = await ref.get();
@@ -675,7 +697,7 @@ function showUndo(label, onUndo){
   }
 }
 
-// ===== STEP-7: a11y announcer + auto-close timer =====
+// a11y announcer + auto-close timer =====
 let __autoCloseTimer = null;
 
 function announce(msg){

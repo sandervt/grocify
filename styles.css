@@ -177,19 +177,57 @@ details.section[open] > summary{ background:#eaefff; }
 .counter { font-weight:500; margin:10px 0 8px; color:var(--muted); }
 
 /* --- Shopping list --- */
-.shopping-list { list-style:none; padding:0; margin:0; }
-.section-header{
-  margin-top:16px; font-weight:600; color:var(--primary);
-  font-size:1.1rem; border-bottom:1px solid #e2e8f0; padding-bottom:4px; cursor:default;
+.shopping-list { list-style: none; padding: 0; margin: 0; }
+
+/* Top-level section wrapper (li.section in the shopping list) */
+.shopping-list > li.section {
+  display: block;
+  padding: 0;
+  margin: 12px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.shopping-list li{
-  padding:6px 10px; border-bottom:1px solid #e2e8f0;
-  display:flex; justify-content:space-between; align-items:center;
-  cursor:pointer; transition:background .2s;
+
+/* Section header (title + count) */
+.section__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px 6px;
 }
-.shopping-list li:hover{ background:#f1f5f9; }
-.shopping-list small{ color:var(--muted); font-size:.75rem; }
-.shopping-list li.crossed{ text-decoration:line-through; color:var(--muted); }
+.section__header h3{
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.section__count{
+  margin-left: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section items list */
+.section__items { list-style: none; padding: 0 10px 6px; margin: 0; }
+
+/* Only actual item rows are flexed */
+.section__items > li.item-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.section__items > li.item-row:last-child{ border-bottom: 0; }
+
+/* (optional) hover just on rows, not on headers */
+.section__items > li.item-row:hover{ background: #f8fafc; }
+
+/* Remove the old generic styles if they’re still elsewhere */
+.shopping-list small{ color: var(--muted); font-size: .75rem; }
+.shopping-list li.crossed{ text-decoration: line-through; color: var(--muted); }
 
 /* --- Custom input --- */
 .custom-input{ display:flex; gap:8px; margin-top:20px; }
@@ -403,6 +441,27 @@ dialog{
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 10px;
+  overflow-x: hidden;     /* block horizontal scroll on the panel */
+  overflow-y: auto;       /* keep normal vertical scrolling */
+}
+
+/* Make only the meals row a horizontal scroller */
+#mealRowModal {
+  display: flex;
+  flex-wrap: nowrap;      /* keep chips on one line */
+  gap: 12px;
+  overflow-x: auto;       /* enable horizontal scroll here */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;  /* smooth iOS scrolling */
+  touch-action: pan-x;                 /* capture horizontal swipes */
+  overscroll-behavior-inline: contain; /* prevent scroll chaining to parent */
+  scroll-snap-type: x proximity;       /* optional: gentle snapping */
+}
+
+/* Each chip is a snap target and won’t shrink */
+#mealRowModal .chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 #composer.open .sheet__panel { transform: translateY(0%); }
@@ -424,26 +483,35 @@ dialog{
   outline: none;
 }
 
+#modalSuggestions { padding: 8px 0; }
 .suggestions {
   list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  max-height: 40vh;
-  overflow: auto;
+  margin: 0;
+  padding: 0 8px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-
 .suggestions li {
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
   cursor: pointer;
+  user-select: none;
+  font-weight: 600;
 }
+.suggestions li:active { transform: translateY(1px); }
 .suggestions li:hover { background: #f8fafc; }
 
 .sheet__actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 10px;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, var(--card), rgba(255,255,255,0.85) 60%, transparent);
+  padding-top: 8px;
+  margin-top: 8px;
+  /* Optional small border hint */
+  border-top: 1px solid #e2e8f0;
 }
 
 .btn { padding: 8px 12px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; }
@@ -598,3 +666,48 @@ dialog{
 }
 .menu__item:hover { background: #f8fafc; }
 .menu__item.delete { color: #b91c1c; }
+
+/* --- Fix: bottom sheet gutters + horizontal scroller in meals --- */
+#composer .sheet__panel{
+  /* keep the grid layout + vertical scroll */
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  max-height: 85vh;
+  overflow-y: auto;
+  /* force gutters on first open (mobile) */
+  padding: 12px 16px 16px !important;
+  /* block any accidental X scroll on the panel itself */
+  overflow-x: hidden !important;
+}
+
+/* Make sure grid children can shrink to container on small screens */
+#modalMeals,
+#modalSuggestions,
+#composer .sheet__form { min-width: 0; }
+
+/* Horizontal chips row: one line, its own scroller */
+#mealRowModal{
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  padding: 8px 2px 4px;   /* tiny inner breathing room */
+}
+
+/* Chips shouldn’t shrink; give them a sensible base width */
+#mealRowModal .chip{
+  flex: 0 0 auto;
+  min-width: 120px;
+  scroll-snap-align: start;
+}
+
+/* gentle side padding for section blocks inside the sheet */
+#modalMeals .section-label,
+#modalSuggestions,
+#composer .sheet__form { padding-left: 2px; padding-right: 2px; }
