@@ -88,49 +88,55 @@ function getKnownItems(){
 function refreshKnownItems(){ KNOWN_ITEMS = getKnownItems(); }
 
 /* ---------- Weekly selections ---------- */
+/* ---------- Weekly selections (uses #weeklyAccordion) ---------- */
 function renderWeeklies(){
-  const container = document.getElementById("weeklyGroups");
-  if(!container) return;
+  const container = document.getElementById("weeklyAccordion");
+  if(!container){ console.warn("renderWeeklies: #weeklyAccordion not found"); return; }
 
   container.innerHTML = "";
-  Object.entries(WEEKLY_GROUPS).forEach(([group, items]) => {
+  Object.entries(WEEKLY_GROUPS || {}).forEach(([group, items]) => {
     const card = document.createElement("div");
     card.className = "weekly-group";
-    card.innerHTML = `
-      <div class="weekly-group__header">
-        <span class="weekly-group__chev">►</span>
-        <span class="weekly-group__title">${group}</span>
-        <span class="weekly-group__badge">0</span>
-      </div>
-      <div class="weekly-group__content"></div>
+
+    const header = document.createElement("div");
+    header.className = "weekly-group__header";
+    header.innerHTML = `
+      <span class="weekly-group__chev">►</span>
+      <span class="weekly-group__title">${group}</span>
+      <span class="weekly-group__badge">0</span>
     `;
-    const header = card.querySelector(".weekly-group__header");
     header.addEventListener("click", () => {
       card.classList.toggle("open");
       header.classList.toggle("active");
-      header.querySelector(".weekly-group__chev").textContent = card.classList.contains("open") ? "▼" : "►";
+      const chev = header.querySelector(".weekly-group__chev");
+      if (chev) chev.textContent = card.classList.contains("open") ? "▼" : "►";
     });
 
-    const wrap = card.querySelector(".weekly-group__content");
-    items.forEach(name => {
+    const content = document.createElement("div");
+    content.className = "weekly-group__content";
+    (items || []).forEach(name => {
       const btn = document.createElement("button");
-      btn.textContent = name;
       btn.className = "chip";
+      btn.textContent = name;
       btn.addEventListener("click", async () => {
-        const isOn = btn.classList.toggle("active");
-        if (isOn) {
-          const sec = inferSection(name);
-          await cloudAddItem(name, sec, group, 1, undefined);
-        } else {
-          await cloudRemoveSource(name, group);
-        }
+        const turnOn = !btn.classList.contains("active");
+        btn.classList.toggle("active", turnOn);
+        if (turnOn)  { await cloudAddItem(name, inferSection(name), group, 1, undefined); }
+        else         { await cloudRemoveSource(name, group); }
+        updateAllWeeklyBadges();
       });
-      wrap.appendChild(btn);
+      content.appendChild(btn);
     });
 
+    card.appendChild(header);
+    card.appendChild(content);
     container.appendChild(card);
   });
+
+  syncWeeklySelectionsFromCloud();
+  updateAllWeeklyBadges();
 }
+
 function updateAllWeeklyBadges(){
   const weeklyGroups = new Set(Object.keys(WEEKLY_GROUPS));
   const map = {};
@@ -161,57 +167,80 @@ function syncWeeklySelectionsFromCloud(){
   });
 }
 
-/* ---------- Meals ---------- */
+/* ---------- Meals (flat chips in #mealRow, no nesting) ---------- */
 function recomputeCombinedMeals(){
-  // Normalize to: name -> items[] (strings)
-  const builtIns = {};
-  Object.entries(MEAL_DATA || {}).forEach(([name, items]) => {
-    builtIns[name] = Array.isArray(items) ? items : [];
-  });
-  const customs = {};
-  Object.entries(customRecipeDocs || {}).forEach(([name, doc]) => {
-    customs[name] = Array.isArray(doc.items) ? doc.items : [];
-  });
-  combinedMeals = { ...builtIns, ...customs };
-}
-function renderMeals(){
-  const wrap = document.getElementById("mealsWrap");
-  if(!wrap) return;
+  const normalize = (arr) =>
+    (Array.isArray(arr) ? arr : [])
+      .map(x => typeof x === "string" ? x : (x && x.name))
+      .filter(Boolean);
 
-  wrap.innerHTML = "";
-  Object.entries(combinedMeals).forEach(([name, items]) => {
-    const row = document.createElement("div");
-    row.className = "meal-row";
-    row.innerHTML = `
-      <button class="chip">${name}</button>
-      <div class="meal-row__items">${(items || []).map(i => `<span>${i}</span>`).join("")}</div>
-    `;
-    const btn = row.querySelector("button");
-    btn.addEventListener("click", async () => {
-      const turnOn = !btn.classList.contains("active");
-      btn.classList.toggle("active", turnOn);
-      if (turnOn) {
-        await cloudAddRecipe(name);
-        activeMeals.add(name);
-      } else {
-        await cloudRemoveRecipe(name);
-        activeMeals.delete(name);
-      }
-      await saveMealState();
-      updateCounter();
-    });
-    if (activeMeals.has(name)) btn.classList.add("active");
-    wrap.appendChild(row);
-  });
-  updateCounter();
-  updateAllWeeklyBadges();
+  const builtIns = {};
+  Object.entries(MEAL_DATA || {}).forEach(([name, items]) => builtIns[name] = normalize(items));
+
+  const customs = {};
+  Object.entries(customRecipeDocs || {}).forEach(([name, doc]) => customs[name] = normalize(doc.items));
+
+  combinedMeals = { ...builtIns, ...customs };
+  window.__debugCombinedMeals = combinedMeals; // optional console sanity check
 }
+
+function renderMeals(){
+  const wrap = document.getElementById("mealRow");
+  if(!wrap){ console.warn("renderMeals: #mealRow not found"); return; }
+
+  // Container itself is the scroller (see .meal-row CSS in styles)
+  wrap.innerHTML = "";
+
+  const entries = Object.entries(combinedMeals || {});
+  if (entries.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "muted";
+    empty.textContent = "Geen maaltijden gevonden";
+    wrap.appendChild(empty);
+    return;
+  }
+
+  // Ensure the container has the correct class for styling
+  wrap.classList.add("meal-row");
+
+  entries
+    .sort(([a],[b]) => a.localeCompare(b))
+    .forEach(([name/*, items*/]) => {
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.dataset.meal = name;
+      btn.textContent = name;
+
+      // Reflect state
+      if (activeMeals.has(name)) btn.classList.add("active");
+
+      // Toggle on click
+      btn.addEventListener("click", async () => {
+        const turnOn = !btn.classList.contains("active");
+        btn.classList.toggle("active", turnOn);
+        if (turnOn) { await cloudAddRecipe(name); activeMeals.add(name); }
+        else        { await cloudRemoveRecipe(name); activeMeals.delete(name); }
+        await saveMealState();
+        updateCounter();
+      });
+
+      wrap.appendChild(btn);
+    });
+
+  updateCounter();
+}
+
 function reflectMealPillsFromState(){
-  document.querySelectorAll(".meal-row button").forEach(btn => {
-    const name = btn.textContent || "";
+  const root = document.getElementById("mealRow");
+  if(!root) return;
+  // Only look at the actual chips inside #mealRow
+  const buttons = root.querySelectorAll("button[data-meal]");
+  buttons.forEach(btn => {
+    const name = btn.dataset.meal || btn.textContent || "";
     btn.classList.toggle("active", activeMeals.has(name));
   });
 }
+
 
 /* ---------- Header counters ---------- */
 function updateCounter(){
@@ -806,4 +835,3 @@ async function deleteItemWithUndo(name){
     await ref.set(data, { merge: true });
   });
 }
-

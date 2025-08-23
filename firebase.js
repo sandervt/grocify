@@ -9,7 +9,7 @@ export let recipesCol;  // households/{id}/recipes
 export let storesCol;   // households/{id}/stores
 
 // Small helpers shared across features
-export const inc    = () => firebase.firestore.FieldValue.increment(1);
+export const inc = (n = 1) => firebase.firestore.FieldValue.increment(n);
 export const arrAdd = (v) => firebase.firestore.FieldValue.arrayUnion(v);
 export const arrDel = (v) => firebase.firestore.FieldValue.arrayRemove(v);
 export const slug   = (name) => String(name||"").toLowerCase().trim().replace(/\s+/g,'-').replace(/[^\w-]/g,'');
