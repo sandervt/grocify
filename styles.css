@@ -709,6 +709,9 @@ dialog{
 #modalSuggestions,
 #composer .sheet__form { padding-left: 2px; padding-right: 2px; }
 
+/* Prevent background scrolling when the composer is open */
+body.modal-open { overflow: hidden; }
+
 /* Clear-list as an inline action at the bottom of the list */
 .clear-list {
   position: static;           /* not fixed */

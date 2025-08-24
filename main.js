@@ -3,6 +3,22 @@ import { initListFeature } from "./features/list.js";
 import { initRecipesFeature } from "./features/recipes.js";
 import { initStoresFeature } from "./features/stores.js";
 
+function openComposer() {
+  const composer = document.getElementById('composer');
+  if (!composer) return;
+  composer.classList.add('open');
+  document.body.classList.add('modal-open');
+
+  // let features/list.js refresh suggestions/chips, etc.
+  document.dispatchEvent(new Event('composer:open'));
+}
+
+function closeComposer() {
+  const composer = document.getElementById('composer');
+  if (!composer) return;
+  composer.classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
 
 // MVP STEP-1: Simple global Undo snackbar utility
 (function(){
@@ -150,8 +166,46 @@ function initRouter(){
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+
+    const fab     = document.getElementById('fabAdd');  
+    const scrim   = document.getElementById('sheetScrim');
+    const closeBt = document.getElementById('sheetClose');
+    const panel   = document.querySelector('#composer .sheet__panel');
+
   await initFirebase();
   initRouter();
+
+  fab   && fab.addEventListener('click', openComposer);
+  scrim && scrim.addEventListener('click', closeComposer);
+  closeBt && closeBt.addEventListener('click', closeComposer);
+
+
+  // Close when features/list.js asks for it (undo timers, etc.)
+  document.addEventListener('composer:request-close', closeComposer);
+
+  // ESC to close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('composer')?.classList.contains('open')) {
+      closeComposer();
+    }
+  });
+
+  // Swipe down to close (simple, forgiving)
+  let startY = null, dragging = false;
+  panel && panel.addEventListener('touchstart', (e) => {
+    if (!document.getElementById('composer')?.classList.contains('open')) return;
+    startY = e.touches[0].clientY; dragging = true;
+  }, { passive: true });
+
+  panel && panel.addEventListener('touchmove', (e) => {
+    if (!dragging || startY == null) return;
+    const dy = e.touches[0].clientY - startY;
+    // only react on downward pull near the top of the sheet
+    const atTop = panel.scrollTop <= 0;
+    if (dy > 40 && atTop) { closeComposer(); dragging = false; startY = null; }
+  }, { passive: true });
+
+  panel && panel.addEventListener('touchend', () => { dragging = false; startY = null; });
 
   // boot features
   initListFeature();
