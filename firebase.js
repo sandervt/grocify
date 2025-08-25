@@ -7,6 +7,8 @@ export let stateDoc;    // households/{id}/meta/uiState
 export let itemsCol;    // households/{id}/listItems
 export let recipesCol;  // households/{id}/recipes
 export let storesCol;   // households/{id}/stores
+export let itemsCatalogCol; // households/{id}/itemsCatalog
+
 
 // Small helpers shared across features
 export const inc = (n = 1) => firebase.firestore.FieldValue.increment(n);
@@ -36,4 +38,5 @@ export async function initFirebase() {
   itemsCol   = base.collection("listItems");
   recipesCol = base.collection("recipes");
   storesCol  = base.collection("stores");
+  itemsCatalogCol = base.collection("itemsCatalog");
 }

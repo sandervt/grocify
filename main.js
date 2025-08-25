@@ -2,52 +2,40 @@ import { initFirebase } from "./firebase.js";
 import { initListFeature } from "./features/list.js";
 import { initRecipesFeature } from "./features/recipes.js";
 import { initStoresFeature } from "./features/stores.js";
+import { openItemsManagerDialog, initItemsFeature } from "./features/items.js";
 
+/* ===== Composer (bottom sheet) ===== */
 function openComposer() {
   const composer = document.getElementById('composer');
   if (!composer) return;
   composer.classList.add('open');
   document.body.classList.add('modal-open');
-
-  // let features/list.js refresh suggestions/chips, etc.
   document.dispatchEvent(new Event('composer:open'));
 }
-
 function closeComposer() {
   const composer = document.getElementById('composer');
   if (!composer) return;
   composer.classList.remove('open');
   document.body.classList.remove('modal-open');
+  document.dispatchEvent(new Event('composer:close'));
 }
 
-// MVP STEP-1: Simple global Undo snackbar utility
-(function(){
-  const SNACK_ID = 'snackbar';
-  function ensureHost(){
-    let el = document.getElementById(SNACK_ID);
-    if(!el){
-      el = document.createElement('div');
-      el.id = SNACK_ID;
-      document.body.appendChild(el);
-    }
-    return el;
-  }
-  let timer = null;
-  window.GrocifyUndo = {
-    show(label, onUndo){
-      const host = ensureHost();
-      host.innerHTML = '';
+/* ===== Snackbar (utility) ===== */
+window.Snackbar = (() => {
+  let timer;
+  return {
+    show(message, { actionLabel, onUndo } = {}){
+      const host = document.getElementById('snackbarHost');
+      if (!host) return;
       const bar = document.createElement('div');
       bar.className = 'snackbar';
-      const msg = document.createElement('span');
-      msg.className = 'snackbar__label';
-      msg.textContent = label;
+      const msg = document.createElement('div');
+      msg.className = 'snackbar__message';
+      msg.textContent = message;
       const btn = document.createElement('button');
       btn.className = 'snackbar__btn';
-      btn.textContent = 'Ongedaan maken';
+      btn.textContent = actionLabel || 'Ongedaan maken';
       btn.addEventListener('click', async () => {
-        clearTimeout(timer);
-        timer = null;
         host.innerHTML = '';
         try{ await onUndo?.(); }catch(e){ console.error('Undo failed', e); }
       });
@@ -60,63 +48,40 @@ function closeComposer() {
   };
 })();
 
-// ===== Bottom Sheet Controller (STEP-2/3) =====
+/* ===== Bottom Sheet Controller (Composer) ===== */
 const Composer = (() => {
-  let root, panel, scrim, input, closeBtn;
+  let root, panel, scrim, closeBtn;
 
-  function ensure() {
-    root = root || document.getElementById('composer');
-    if (!root) return null;
-    panel = root.querySelector('.sheet__panel');
-    scrim = root.querySelector('.sheet__scrim');
-    input = document.getElementById('addInput');
+  function open(){
+    openComposer();
+    root?.setAttribute('aria-hidden', 'false');
+  }
+  function close(){
+    closeComposer();
+    root?.setAttribute('aria-hidden', 'true');
+  }
+  function wire(){
+    root = document.getElementById('composer');
+    panel = document.querySelector('#composer .sheet__panel');
+    scrim = document.getElementById('sheetScrim');
     closeBtn = document.getElementById('sheetClose');
-    return root;
-  }
-
-  function open() {
-    if (!ensure()) return;
-    root.classList.add('open');
-    // Small delay to allow paint before focusing
-    setTimeout(() => {
-      input?.focus();
-      // STEP-3: let others refresh suggestions on open
-      document.dispatchEvent(new CustomEvent('composer:open'));
-    }, 50);
-    window.addEventListener('keydown', onKey);
-  }
-
-  function close() {
-    if (!ensure()) return;
-    root.classList.remove('open');
-    window.removeEventListener('keydown', onKey);
-    document.getElementById('fabAdd')?.focus();
-  }
-
-  function onKey(e) {
-    if (e.key === 'Escape') close();
-  }
-
-  function wire() {
-    if (!ensure()) return;
+    if(!root || !panel) return;
     scrim?.addEventListener('click', close);
     closeBtn?.addEventListener('click', close);
     panel?.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
   }
-
   return { open, close, wire };
 })();
 
-// After Composer.wire() and the FAB binding from Step 2/3:
+// Wire FAB early so it feels instant
 document.addEventListener('DOMContentLoaded', () => {
   Composer.wire();
   const fab = document.getElementById('fabAdd');
   fab?.addEventListener('click', () => Composer.open());
-
-  // STEP-7: allow other modules to request a close
   document.addEventListener('composer:request-close', () => Composer.close());
 });
 
+/* ===== Tabs Router ===== */
 function initRouter(){
   const TABS = ["list","recipes","stores"];
   const DEFAULT_TAB = "list";
@@ -136,84 +101,111 @@ function initRouter(){
   function setActive(name){
     Object.entries(pages).forEach(([k,el]) => el?.classList.toggle("active", k===name));
     Object.entries(buttons).forEach(([k,btn]) => {
-      if(!btn) return;
-      const isActive = k===name;
-      btn.classList.toggle("active", isActive);
-      btn.setAttribute("aria-selected", String(isActive));
-      btn.setAttribute("tabindex", isActive ? "0" : "-1");
+      btn?.setAttribute("aria-selected", String(k===name));
+      btn?.setAttribute("tabindex", k===name ? "0" : "-1");
     });
     localStorage.setItem(STORAGE_KEY, name);
+    location.hash = `#/${name}`;
   }
-  function normalize(hash){
-    const key = (hash || "").replace(/^#/, "");
-    return TABS.includes(key) ? key : null;
-  }
+
   function syncFromHash(){
-    const byHash = normalize(location.hash);
-    const remembered = localStorage.getItem(STORAGE_KEY);
-    const target = byHash || (TABS.includes(remembered) ? remembered : DEFAULT_TAB);
-    if (!byHash) history.replaceState(null, "", "#" + target);
-    setActive(target);
+    const hash = (location.hash || "").replace(/^#\//,'');
+    const tab = TABS.includes(hash) ? hash : (localStorage.getItem(STORAGE_KEY) || DEFAULT_TAB);
+    setActive(tab);
   }
+
+  // Wire buttons (click + keyboard)
   Object.entries(buttons).forEach(([name,btn]) => {
-    btn?.addEventListener("click", () => {
-      if (location.hash !== "#" + name) location.hash = name;
-      else setActive(name);
+    btn?.addEventListener("click", () => setActive(name));
+    btn?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(name); }
     });
   });
+
   window.addEventListener("hashchange", syncFromHash);
   syncFromHash();
 }
 
+/* ===== App boot ===== */
 window.addEventListener("DOMContentLoaded", async () => {
-
-    const fab     = document.getElementById('fabAdd');  
-    const scrim   = document.getElementById('sheetScrim');
-    const closeBt = document.getElementById('sheetClose');
-    const panel   = document.querySelector('#composer .sheet__panel');
+  const panel = document.querySelector('#composer .sheet__panel');
 
   await initFirebase();
   initRouter();
 
-  fab   && fab.addEventListener('click', openComposer);
-  scrim && scrim.addEventListener('click', closeComposer);
-  closeBt && closeBt.addEventListener('click', closeComposer);
-
-
-  // Close when features/list.js asks for it (undo timers, etc.)
-  document.addEventListener('composer:request-close', closeComposer);
-
-  // ESC to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && document.getElementById('composer')?.classList.contains('open')) {
-      closeComposer();
-    }
-  });
-
-  // Swipe down to close (simple, forgiving)
-  let startY = null, dragging = false;
+  // Pull-to-close on mobile
+  let startY = null;
+  let dragging = false;
   panel && panel.addEventListener('touchstart', (e) => {
-    if (!document.getElementById('composer')?.classList.contains('open')) return;
-    startY = e.touches[0].clientY; dragging = true;
+    if (panel.scrollTop <= 0) { dragging = true; startY = e.touches[0].clientY; }
   }, { passive: true });
-
   panel && panel.addEventListener('touchmove', (e) => {
     if (!dragging || startY == null) return;
     const dy = e.touches[0].clientY - startY;
-    // only react on downward pull near the top of the sheet
     const atTop = panel.scrollTop <= 0;
     if (dy > 40 && atTop) { closeComposer(); dragging = false; startY = null; }
   }, { passive: true });
-
   panel && panel.addEventListener('touchend', () => { dragging = false; startY = null; });
 
-  // boot features
+  /* === Overflow (⋮) menu wiring === */
+const overflowWrap = document.querySelector('.tabbar .overflow');
+const overflowBtn  = document.getElementById('overflowBtn');
+const overflowMenu = document.getElementById('overflowMenu');
+
+function closeOverflow(){
+  if (!overflowWrap) return;
+  overflowWrap.classList.remove('is-open');
+  overflowBtn?.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', onDocClick, true);
+  document.removeEventListener('keydown', onEsc, true);
+}
+function onDocClick(e){
+  if (!overflowWrap.contains(e.target)) closeOverflow();
+}
+function onEsc(e){ if (e.key === 'Escape') closeOverflow(); }
+
+overflowBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!overflowWrap) return;
+  const willOpen = !overflowWrap.classList.contains('is-open');
+
+  // close any open instance first
+  closeOverflow();
+
+  if (willOpen) {
+    overflowWrap.classList.add('is-open');
+    overflowBtn.setAttribute('aria-expanded', 'true');
+    setTimeout(() => {
+      document.addEventListener('click', onDocClick, true);
+      document.addEventListener('keydown', onEsc, true);
+      const first = overflowMenu?.querySelector('button');
+      first?.focus();
+    }, 0);
+  }
+});
+overflowBtn?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); overflowBtn.click(); }
+});
+
+// Launch Ingredients manager dialog (from features/items.js)
+import('./features/items.js').then(({ openItemsManagerDialog }) => {
+  document.getElementById('miManageIngredients')?.addEventListener('click', () => {
+    closeOverflow();
+    openItemsManagerDialog();
+  });
+});
+
+  // Features
   initListFeature();
   initRecipesFeature();
+  initItemsFeature(); // harmless if the items tab DOM is absent
   initStoresFeature({
     onActiveStoreChanged(){
-      // Re-render list when active store changes (uses window.renderList provided by List feature)
       if (typeof window.renderList === "function") window.renderList();
     }
   });
 });
+
+
+

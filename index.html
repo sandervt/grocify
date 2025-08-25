@@ -98,13 +98,33 @@
             </div>
         </section>
 
+      <!-- TAB: ITEMS (catalog manager) -->
+        <section id="tab-items" class="tabpage">
+          <div class="section__body" style="padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+              <h2 style="margin:0;">🥕 Ingrediënten</h2>
+              <button id="itemAddBtn" class="btn primary">Nieuw ingrediënt</button>
+              </div>
+              <input id="itemSearch" type="search" placeholder="Zoek of voeg toe…" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 12px;">
+            <div id="itemsGrid" class="stores-grid" style="display:grid;gap:12px;padding:0;"></div>
+            </div>
+        </section>
+
         <!-- Bottom tab bar -->
         <nav class="tabbar" role="tablist" aria-label="Navigatie">
-            <button id="tabbtn-list" role="tab" aria-controls="tab-list"><span>📝</span>Lijst</button>
-            <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
-            <button id="tabbtn-stores" role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
+          <button id="tabbtn-list" role="tab" aria-controls="tab-list"><span>📝</span>Lijst</button>
+          <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
+          <button id="tabbtn-stores" role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
+
+        <!-- ⋮ overflow -->
+          <div class="overflow">
+            <button id="overflowBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="overflowMenu" title="Meer">⋮</button>
+            <ul id="overflowMenu" class="menu" role="menu">
+              <li role="menuitem"><button id="miManageIngredients">🥕 Ingrediënten beheren</button></li>
+            </ul>
+          </div>
         </nav>
-    </div>
+
     <!-- ARIA live announcements -->
     <div id="ariaLive" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 </body>
