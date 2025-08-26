@@ -664,3 +664,57 @@ body.overflow-open .tabbar .overflow-panel{
   display: inline-flex; align-items: center; gap: 8px;
   border-radius: 999px; padding: 10px 16px;
 }
+
+/* ========== Fireworks effect ========== */
+.confetti{
+  pointer-events:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:9999;
+  overflow:visible;
+}
+.confetti span{
+  position:absolute;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:var(--accent);
+  transform:translate(-50%, -50%);
+  animation:confetti-burst 0.6s ease-out forwards;
+}
+.confetti span:nth-child(3n){
+  background:var(--primary);
+}
+.confetti span:nth-child(3n+1){
+  background:var(--danger);
+}
+.confetti .balloon{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:14px;
+  height:18px;
+  background:currentColor;
+  border-radius:50% 50% 40% 40%;
+  transform:translateX(-50%);
+  animation:balloon-rise 1.2s ease-out forwards;
+}
+.confetti .balloon::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:50%;
+  width:2px;
+  height:14px;
+  background:currentColor;
+  transform:translateX(-50%);
+}
+@keyframes confetti-burst{
+  to{opacity:0;transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2);}
+}
+@keyframes balloon-rise{
+  to{opacity:0;transform:translate(-50%, -80px);}
+}
