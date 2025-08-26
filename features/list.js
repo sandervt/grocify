@@ -198,10 +198,12 @@ function updateProgressRing(){
   const radius = circle.r.baseVal.value;
   const circumference = 2 * Math.PI * radius;
   circle.style.strokeDasharray = `${circumference}`;
-  const offset = circumference - (total ? (checked / total) : 0) * circumference;
+  const progress = total ? (checked / total) : 0;
+  const offset = circumference - progress * circumference;
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
+  svg.classList.toggle('floating', progress > 0);
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
