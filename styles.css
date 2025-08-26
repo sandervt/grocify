@@ -61,6 +61,34 @@ h1 {
   color: var(--primary);
 }
 
+.app-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+#progressRing{
+  width:2.5rem;
+  height:2.5rem;
+  transform:rotate(-90deg);
+  flex-shrink:0;
+}
+#progressRing circle{
+  fill:none;
+  stroke-width:4;
+}
+#progressRing .ring-bg{
+  stroke:var(--border);
+}
+#progressRing .ring-progress{
+  stroke:var(--primary);
+  stroke-linecap:round;
+  stroke-dasharray:100;
+  stroke-dashoffset:100;
+  transition:stroke-dashoffset .3s ease;
+}
+
 .section-label {
   font-size: 1rem;
   font-weight: 600;
