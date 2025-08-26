@@ -194,15 +194,16 @@ function updateProgressRing(){
   const circle = svg.querySelector('.ring-progress');
   if (!circle) return;
 
-  const onList = document.getElementById('tab-list')?.classList.contains('active');
-  svg.hidden = !onList;
-
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
+  const progress = total ? (checked / total) : 0;
+  const onList = document.getElementById('tab-list')?.classList.contains('active');
+
+  svg.hidden = !(onList && progress > 0);
+
   const radius = circle.r.baseVal.value;
   const circumference = 2 * Math.PI * radius;
   circle.style.strokeDasharray = `${circumference}`;
-  const progress = total ? (checked / total) : 0;
   const offset = circumference - progress * circumference;
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
