@@ -204,7 +204,7 @@ async function onDialogDelete(){
 }
 
 /* ---------- Shared helpers ---------- */
-function parseItems(raw){
+export function parseItems(raw){
   return Array.from(new Set(
     (raw || "")
       .split(/[\n,]+/)
