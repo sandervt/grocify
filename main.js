@@ -213,6 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
     mod.openItemsManagerDialog?.();
   });
 
+  // Open Winkels from overflow (no tab button needed)
+  document.getElementById('miStores')?.addEventListener('click', () => {
+    closeOverflow();
+    // route to the stores page; the router will pick it up
+    location.hash = '#/stores';
+  });
+
+
   // Lazy import manager dialog when clicked
   document.getElementById('miManageIngredients')?.addEventListener('click', async () => {
     closeOverflow();
