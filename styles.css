@@ -35,6 +35,7 @@ body{
   width: 100%;
   max-width: 720px;
   margin: 0;
+  background: var(--card);
   padding-top: 20px;
   padding-bottom: calc(var(--tabbar-h) + 90px);
   padding-left: max(20px, env(safe-area-inset-left));
@@ -46,7 +47,6 @@ body{
 @media (min-width: 640px) {
   .app{
     margin: 0 auto;
-    background: var(--card);
     border-radius: var(--radius);
     box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   }
