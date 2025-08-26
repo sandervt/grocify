@@ -282,8 +282,11 @@ function renderList(){
       // Checkbox toggle
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         await cloudToggleCheck(name, cb.checked);
-        if (cb.checked) playConfetti(row);
       });
 
       // Qty controls
@@ -792,9 +795,8 @@ async function deleteItemWithUndo(name){
   });
 }
 
-function playConfetti(row){
-  if (!row || !document.body) return;
-  const rect = row.getBoundingClientRect();
+function playConfetti(rect){
+  if (!rect || !document.body) return;
   const wrap = document.createElement("div");
   wrap.className = "confetti";
   wrap.style.top = rect.top + window.scrollY + "px";
