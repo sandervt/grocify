@@ -856,6 +856,7 @@ function playBalloon(rect){
   host.style.top = `${rect.top}px`;
   host.style.pointerEvents = 'none';
   host.style.zIndex = 1000;
+  host.style.fontSize = '24px';
   host.textContent = '🎈';
   document.body.appendChild(host);
   requestAnimationFrame(() => {
@@ -871,7 +872,8 @@ function playStars(rect){
   wrap.className = 'stars';
   wrap.style.left = `${rect.left}px`;
   wrap.style.top = `${rect.top}px`;
-  wrap.style.width = `${rect.width}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
   document.body.appendChild(wrap);
   const colors = ['#facc15', '#fcd34d', '#fde68a'];
   for (let i = 0; i < 8; i++) {
@@ -898,6 +900,8 @@ function playConfetti(rect){
   wrap.style.zIndex = 1000;
   wrap.style.left = `${rect.left}px`;
   wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
   document.body.appendChild(wrap);
   const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308'];
   for (let i = 0; i < 12; i++) {
