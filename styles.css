@@ -614,3 +614,27 @@ body.overflow-open .tabbar .overflow-panel{
   display: inline-flex; align-items: center; gap: 8px;
   border-radius: 999px; padding: 10px 16px;
 }
+
+/* ========== Confetti effect ========== */
+.confetti{
+  pointer-events:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+}
+.confetti span{
+  position:absolute;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--accent);
+  animation:confetti-pop 0.8s ease-out forwards;
+}
+.confetti span:nth-child(odd){
+  background:var(--primary);
+}
+@keyframes confetti-pop{
+  from{opacity:1;transform:translateY(0) scale(1);}
+  to{opacity:0;transform:translateY(-16px) scale(.6);}
+}

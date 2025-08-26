@@ -283,6 +283,7 @@ function renderList(){
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
         await cloudToggleCheck(name, cb.checked);
+        if (cb.checked) playConfetti(row);
       });
 
       // Qty controls
@@ -789,4 +790,19 @@ async function deleteItemWithUndo(name){
     delete data.updatedAt;
     await ref.set(data, { merge: true });
   });
+}
+
+function playConfetti(row){
+  if (!row) return;
+  if (getComputedStyle(row).position === "static") row.style.position = "relative";
+  const wrap = document.createElement("div");
+  wrap.className = "confetti";
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement("span");
+    s.style.left = Math.random() * 100 + "%";
+    s.style.animationDelay = i * 0.05 + "s";
+    wrap.appendChild(s);
+  }
+  row.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 1000);
 }
