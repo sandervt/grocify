@@ -805,10 +805,38 @@ function playConfetti(rect){
   wrap.style.height = rect.height + "px";
   for (let i = 0; i < 14; i++) {
     const s = document.createElement("span");
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 20 + Math.random() * 30;
-    s.style.setProperty("--dx", Math.cos(angle) * dist + "px");
-    s.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+    const side = Math.floor(Math.random() * 4);
+    let left, top, dx, dy;
+    const spread = 20 + Math.random() * 30;
+    switch (side) {
+      case 0: // top
+        left = Math.random() * 100;
+        top = 0;
+        dx = (Math.random() - 0.5) * 40;
+        dy = -spread;
+        break;
+      case 1: // right
+        left = 100;
+        top = Math.random() * 100;
+        dx = spread;
+        dy = (Math.random() - 0.5) * 40;
+        break;
+      case 2: // bottom
+        left = Math.random() * 100;
+        top = 100;
+        dx = (Math.random() - 0.5) * 40;
+        dy = spread;
+        break;
+      default: // left
+        left = 0;
+        top = Math.random() * 100;
+        dx = -spread;
+        dy = (Math.random() - 0.5) * 40;
+    }
+    s.style.left = left + "%";
+    s.style.top = top + "%";
+    s.style.setProperty("--dx", dx + "px");
+    s.style.setProperty("--dy", dy + "px");
     s.style.animationDelay = i * 0.02 + "s";
     wrap.appendChild(s);
   }

@@ -628,8 +628,6 @@ body.overflow-open .tabbar .overflow-panel{
 }
 .confetti span{
   position:absolute;
-  top:50%;
-  left:50%;
   width:4px;
   height:4px;
   border-radius:50%;
