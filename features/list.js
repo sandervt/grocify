@@ -316,6 +316,10 @@ function renderList(){
       // Checkbox toggle
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         activeItems[name].checked = cb.checked;
         renderList();
         await cloudToggleCheck(name, cb.checked);
@@ -837,4 +841,74 @@ async function deleteItemWithUndo(name){
     delete data.updatedAt;
     await ref.set(data, { merge: true });
   });
+}
+
+function playConfetti(rect){
+  if (!rect || !document.body) return;
+  // Occasionally show a balloon instead of confetti
+  if (Math.random() < 0.2) {
+    playBalloon(rect);
+    return;
+  }
+  const wrap = document.createElement("div");
+  wrap.className = "confetti";
+  wrap.style.top = rect.top + window.scrollY + "px";
+  wrap.style.left = rect.left + window.scrollX + "px";
+  wrap.style.width = rect.width + "px";
+  wrap.style.height = rect.height + "px";
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement("span");
+    const side = Math.floor(Math.random() * 4);
+    let left, top, dx, dy;
+    const spread = 20 + Math.random() * 30;
+    switch (side) {
+      case 0: // top
+        left = Math.random() * 100;
+        top = 0;
+        dx = (Math.random() - 0.5) * 40;
+        dy = -spread;
+        break;
+      case 1: // right
+        left = 100;
+        top = Math.random() * 100;
+        dx = spread;
+        dy = (Math.random() - 0.5) * 40;
+        break;
+      case 2: // bottom
+        left = Math.random() * 100;
+        top = 100;
+        dx = (Math.random() - 0.5) * 40;
+        dy = spread;
+        break;
+      default: // left
+        left = 0;
+        top = Math.random() * 100;
+        dx = -spread;
+        dy = (Math.random() - 0.5) * 40;
+    }
+    s.style.left = left + "%";
+    s.style.top = top + "%";
+    s.style.setProperty("--dx", dx + "px");
+    s.style.setProperty("--dy", dy + "px");
+    s.style.animationDelay = i * 0.02 + "s";
+    wrap.appendChild(s);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 600);
+}
+
+function playBalloon(rect){
+  const wrap = document.createElement("div");
+  wrap.className = "confetti";
+  wrap.style.top = rect.top + window.scrollY + "px";
+  wrap.style.left = rect.left + window.scrollX + "px";
+  wrap.style.width = rect.width + "px";
+  wrap.style.height = rect.height + "px";
+  const b = document.createElement("div");
+  b.className = "balloon";
+  const colors = ["var(--accent)", "var(--primary)", "var(--danger)"];
+  b.style.color = colors[Math.floor(Math.random() * colors.length)];
+  wrap.appendChild(b);
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 1200);
 }
