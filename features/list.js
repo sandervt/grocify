@@ -200,6 +200,8 @@ function updateProgressRing(){
   circle.style.strokeDasharray = `${circumference}`;
   const offset = circumference - (total ? (checked / total) : 0) * circumference;
   circle.style.strokeDashoffset = offset;
+  const complete = total > 0 && checked === total;
+  svg.classList.toggle('completed', complete);
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
