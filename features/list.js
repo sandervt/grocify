@@ -194,20 +194,22 @@ function updateCounter(){
 
 function updateProgressRing(){
   const svg = document.getElementById('progressRing');
-  if (!svg) return;
-  const circle = svg.querySelector('.ring-progress');
-  if (!circle) return;
+  const circle = svg ? svg.querySelector('.ring-progress') : null;
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
-  const radius = circle.r.baseVal.value;
-  const circumference = 2 * Math.PI * radius;
-  circle.style.strokeDasharray = `${circumference}`;
-  const offset = circumference - (total ? (checked / total) : 0) * circumference;
-  circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
-  svg.classList.toggle('completed', complete);
+
+  if (svg && circle) {
+    const radius = circle.r.baseVal.value;
+    const circumference = 2 * Math.PI * radius;
+    circle.style.strokeDasharray = `${circumference}`;
+    const offset = circumference - (total ? (checked / total) : 0) * circumference;
+    circle.style.strokeDashoffset = offset;
+    svg.classList.toggle('completed', complete);
+  }
+
   if (complete && !lastComplete) {
-    const rect = svg.getBoundingClientRect();
+    const rect = svg ? svg.getBoundingClientRect() : document.body.getBoundingClientRect();
     playConfetti(rect);
   }
   lastComplete = complete;
