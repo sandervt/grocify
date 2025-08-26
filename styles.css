@@ -615,7 +615,7 @@ body.overflow-open .tabbar .overflow-panel{
   border-radius: 999px; padding: 10px 16px;
 }
 
-/* ========== Confetti effect ========== */
+/* ========== Fireworks effect ========== */
 .confetti{
   pointer-events:none;
   position:absolute;
@@ -624,19 +624,25 @@ body.overflow-open .tabbar .overflow-panel{
   width:100%;
   height:100%;
   z-index:9999;
+  overflow:visible;
 }
 .confetti span{
   position:absolute;
-  width:6px;
-  height:6px;
+  top:50%;
+  left:50%;
+  width:4px;
+  height:4px;
   border-radius:50%;
   background:var(--accent);
-  animation:confetti-pop 0.8s ease-out forwards;
+  transform:translate(-50%, -50%);
+  animation:confetti-burst 0.6s ease-out forwards;
 }
-.confetti span:nth-child(odd){
+.confetti span:nth-child(3n){
   background:var(--primary);
 }
-@keyframes confetti-pop{
-  from{opacity:1;transform:translateY(0) scale(1);}
-  to{opacity:0;transform:translateY(-16px) scale(.6);}
+.confetti span:nth-child(3n+1){
+  background:var(--danger);
+}
+@keyframes confetti-burst{
+  to{opacity:0;transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2);}
 }

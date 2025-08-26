@@ -803,13 +803,15 @@ function playConfetti(rect){
   wrap.style.left = rect.left + window.scrollX + "px";
   wrap.style.width = rect.width + "px";
   wrap.style.height = rect.height + "px";
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 14; i++) {
     const s = document.createElement("span");
-    s.style.left = Math.random() * 100 + "%";
-    s.style.top = Math.random() * 100 + "%";
-    s.style.animationDelay = i * 0.05 + "s";
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 20 + Math.random() * 30;
+    s.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+    s.style.setProperty("--dy", Math.sin(angle) * dist + "px");
+    s.style.animationDelay = i * 0.02 + "s";
     wrap.appendChild(s);
   }
   document.body.appendChild(wrap);
-  setTimeout(() => wrap.remove(), 1000);
+  setTimeout(() => wrap.remove(), 600);
 }
