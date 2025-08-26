@@ -112,7 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.entries(pages).forEach(([k,el]) => el?.classList.toggle("active", k===name));
 
       const ring = document.getElementById('progressRing');
-      if (ring) ring.hidden = name !== 'list';
+      if (ring) {
+        const show = name === 'list';
+        ring.hidden = !show;
+        if (!show) ring.classList.remove('floating');
+      }
 
       // there are two sets of tab buttons (top + bottom), select all
       Object.entries(buttons).forEach(([k,nodeList]) => nodeList.forEach(btn => {

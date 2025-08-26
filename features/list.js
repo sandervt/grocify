@@ -193,6 +193,10 @@ function updateProgressRing(){
   if (!svg) return;
   const circle = svg.querySelector('.ring-progress');
   if (!circle) return;
+
+  const onList = document.getElementById('tab-list')?.classList.contains('active');
+  svg.hidden = !onList;
+
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
   const radius = circle.r.baseVal.value;
@@ -203,7 +207,7 @@ function updateProgressRing(){
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
-  svg.classList.toggle('floating', progress > 0);
+  svg.classList.toggle('floating', onList && progress > 0);
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
