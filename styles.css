@@ -440,9 +440,20 @@ dialog{
   border: none; background: var(--primary); color: #fff;
   font-size: 28px; line-height: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   cursor: pointer; z-index: 1110;
+  transition: transform 200ms ease;
 }
 .fab:hover { background: var(--primary-hover); }
 .fab:focus { outline: 2px solid var(--primary-hover); outline-offset: 2px; }
+
+/* Rotate the FAB icon into an “X” when the composer is open */
+body.modal-open #fabAdd{
+  transform: rotate(45deg);
+}
+
+/* When both overflow and composer are open, retain translation */
+body.modal-open.overflow-open #fabAdd{
+  transform: translateY(8px) rotate(45deg);
+}
 
 /* Hide/disable the global floating FAB while overflow panel is open */
 body.overflow-open .fab{
