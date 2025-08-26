@@ -797,6 +797,11 @@ async function deleteItemWithUndo(name){
 
 function playConfetti(rect){
   if (!rect || !document.body) return;
+  // Occasionally show a balloon instead of confetti
+  if (Math.random() < 0.2) {
+    playBalloon(rect);
+    return;
+  }
   const wrap = document.createElement("div");
   wrap.className = "confetti";
   wrap.style.top = rect.top + window.scrollY + "px";
@@ -842,4 +847,20 @@ function playConfetti(rect){
   }
   document.body.appendChild(wrap);
   setTimeout(() => wrap.remove(), 600);
+}
+
+function playBalloon(rect){
+  const wrap = document.createElement("div");
+  wrap.className = "confetti";
+  wrap.style.top = rect.top + window.scrollY + "px";
+  wrap.style.left = rect.left + window.scrollX + "px";
+  wrap.style.width = rect.width + "px";
+  wrap.style.height = rect.height + "px";
+  const b = document.createElement("div");
+  b.className = "balloon";
+  const colors = ["var(--accent)", "var(--primary)", "var(--danger)"];
+  b.style.color = colors[Math.floor(Math.random() * colors.length)];
+  wrap.appendChild(b);
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 1200);
 }

@@ -641,6 +641,30 @@ body.overflow-open .tabbar .overflow-panel{
 .confetti span:nth-child(3n+1){
   background:var(--danger);
 }
+.confetti .balloon{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:14px;
+  height:18px;
+  background:currentColor;
+  border-radius:50% 50% 40% 40%;
+  transform:translateX(-50%);
+  animation:balloon-rise 1.2s ease-out forwards;
+}
+.confetti .balloon::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:50%;
+  width:2px;
+  height:14px;
+  background:currentColor;
+  transform:translateX(-50%);
+}
 @keyframes confetti-burst{
   to{opacity:0;transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2);}
+}
+@keyframes balloon-rise{
+  to{opacity:0;transform:translate(-50%, -80px);}
 }
