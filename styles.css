@@ -14,6 +14,8 @@ html, body { overflow-x: hidden; }
   --border: #e2e8f0;
   --radius: 12px;
   --tabbar-h: 64px;
+  --section-pad: 16px;
+  --gutter: clamp(8px, 4vw, 20px);
 }
 
 body{
@@ -151,7 +153,7 @@ details.section > summary{
 details.section > summary::-webkit-details-marker{ display:none; }
 details.section[open] > summary{ background:#eaefff; }
 .section__chev { font-weight:700; width:1.1em; text-align:center; }
-.section__body { padding:14px; background:#fff; }
+.section__body { padding: var(--section-pad); background:#fff; }
 
 /* ========== Meals row (single-line horizontal scroll) ========== */
 .meal-row{
@@ -446,9 +448,20 @@ dialog{
   border: none; background: var(--primary); color: #fff;
   font-size: 28px; line-height: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   cursor: pointer; z-index: 1110;
+  transition: transform 200ms ease;
 }
 .fab:hover { background: var(--primary-hover); }
 .fab:focus { outline: 2px solid var(--primary-hover); outline-offset: 2px; }
+
+/* Rotate the FAB icon into an “X” when the composer is open */
+body.modal-open #fabAdd{
+  transform: rotate(45deg);
+}
+
+/* When both overflow and composer are open, retain translation */
+body.modal-open.overflow-open #fabAdd{
+  transform: translateY(8px) rotate(45deg);
+}
 
 /* Hide/disable the global floating FAB while overflow panel is open */
 body.overflow-open .fab{
@@ -670,4 +683,58 @@ body.overflow-open .tabbar .overflow-panel{
 .overflow-fab-btn{
   display: inline-flex; align-items: center; gap: 8px;
   border-radius: 999px; padding: 10px 16px;
+}
+
+/* ========== Fireworks effect ========== */
+.confetti{
+  pointer-events:none;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:9999;
+  overflow:visible;
+}
+.confetti span{
+  position:absolute;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:var(--accent);
+  transform:translate(-50%, -50%);
+  animation:confetti-burst 0.6s ease-out forwards;
+}
+.confetti span:nth-child(3n){
+  background:var(--primary);
+}
+.confetti span:nth-child(3n+1){
+  background:var(--danger);
+}
+.confetti .balloon{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:14px;
+  height:18px;
+  background:currentColor;
+  border-radius:50% 50% 40% 40%;
+  transform:translateX(-50%);
+  animation:balloon-rise 1.2s ease-out forwards;
+}
+.confetti .balloon::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:50%;
+  width:2px;
+  height:14px;
+  background:currentColor;
+  transform:translateX(-50%);
+}
+@keyframes confetti-burst{
+  to{opacity:0;transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.2);}
+}
+@keyframes balloon-rise{
+  to{opacity:0;transform:translate(-50%, -80px);}
 }
