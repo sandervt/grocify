@@ -220,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
     location.hash = '#/stores';
   });
 
-
   // Features
   initListFeature();
   initRecipesFeature();
