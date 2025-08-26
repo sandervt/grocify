@@ -7,6 +7,7 @@ let activeItems = {};                   // { name: { count, sources:Set, checked
 let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
+let showCompleted = false;
 
 /** Recents (STEP-3) */
 const RECENTS_KEY = "grocify_recents_v1";
@@ -98,7 +99,9 @@ export function initListFeature(){
   wireDetailsSections();
   wireAddDialog();
   wireClearList();
+  wireToggleCompleted();
   setClearCtaVisible(false);
+  setToggleCompletedVisible(false);
 
   // Refresh suggestions on composer open (STEP-3)
   document.addEventListener('composer:open', () => {
@@ -187,6 +190,22 @@ function updateCounter(){
   const n = activeMeals.size;
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
+
+function updateProgressRing(){
+  const svg = document.getElementById('progressRing');
+  if (!svg) return;
+  const circle = svg.querySelector('.ring-progress');
+  if (!circle) return;
+  const total = Object.keys(activeItems).length;
+  const checked = Object.values(activeItems).filter(i => i.checked).length;
+  const radius = circle.r.baseVal.value;
+  const circumference = 2 * Math.PI * radius;
+  circle.style.strokeDasharray = `${circumference}`;
+  const offset = circumference - (total ? (checked / total) : 0) * circumference;
+  circle.style.strokeDashoffset = offset;
+  const complete = total > 0 && checked === total;
+  svg.classList.toggle('completed', complete);
+}
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
   cloudDocs.forEach(d => {
@@ -209,12 +228,25 @@ function setClearCtaVisible(hasItems){
   btn.style.display = hasItems ? 'block' : 'none';
 }
 
+function setToggleCompletedVisible(hasChecked){
+  const btn = document.getElementById('toggleCompletedBtn');
+  if (!btn) return;
+  btn.style.display = hasChecked ? 'block' : 'none';
+}
+
 function renderList(){
   const ul = document.getElementById("shoppingList");
   if (!ul) return;
 
   // Clear current DOM
   ul.innerHTML = "";
+
+  const hasChecked = Object.values(activeItems).some(i => i.checked);
+  const toggleBtn = document.getElementById('toggleCompletedBtn');
+  if (toggleBtn) {
+    toggleBtn.textContent = showCompleted ? 'Afgevinkte items verbergen' : 'Afgevinkte items tonen';
+  }
+  setToggleCompletedVisible(hasChecked);
 
   // One global click handler to close any open overflow menus
   if (window.__grocifyCloseMenus) {
@@ -235,7 +267,9 @@ function renderList(){
     const items = Object.keys(activeItems)
       .filter(name => (ITEM_TO_SECTION[name] || inferSection(name)) === section);
 
-    if (items.length === 0) return;
+    const uncheckedCount = items.filter(n => !activeItems[n].checked).length;
+    const visibleItems = showCompleted ? items : items.filter(n => !activeItems[n].checked);
+    if (visibleItems.length === 0) return;
 
     const li = document.createElement("li");
     li.className = "section";
@@ -243,14 +277,14 @@ function renderList(){
       <div class="section__header">
         <h3>${section}</h3>
         <span class="section__count">
-          ${items.filter(n => !activeItems[n].checked).length}/${items.length}
+          ${uncheckedCount}/${items.length}
         </span>
       </div>
       <ul class="section__items"></ul>
     `;
     const inner = li.querySelector(".section__items");
 
-    items.sort((a,b) => a.localeCompare(b)).forEach(name => {
+    visibleItems.sort((a,b) => a.localeCompare(b)).forEach(name => {
       const data = activeItems[name];
       const row = document.createElement("li");
       row.className = "item-row";
@@ -286,6 +320,8 @@ function renderList(){
           const rect = row.getBoundingClientRect();
           playConfetti(rect);
         }
+        activeItems[name].checked = cb.checked;
+        renderList();
         await cloudToggleCheck(name, cb.checked);
       });
 
@@ -317,6 +353,8 @@ function renderList(){
 
     ul.appendChild(li);
   });
+
+  updateProgressRing();
 }
 
 
@@ -615,6 +653,16 @@ function wireClearList(){
     }
     });
 
+}
+
+function wireToggleCompleted(){
+  const btn = document.getElementById('toggleCompletedBtn');
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    showCompleted = !showCompleted;
+    renderList();
+  });
+  btn.textContent = showCompleted ? 'Afgevinkte items verbergen' : 'Afgevinkte items tonen';
 }
 
 /* --- Unified floating tray (icon-only) --- */
