@@ -19,7 +19,14 @@
 </head>
 <body>
     <div class="app">
-        <h1>Weekboodschappen</h1>
+        <div class="app-header">
+          <h1>Weekboodschappen</h1>
+          <svg id="progressRing" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="16"></circle>
+            <circle class="ring-progress" cx="18" cy="18" r="16"></circle>
+            <text class="ring-check" x="18" y="21">✓</text>
+          </svg>
+        </div>
 
         <!-- TAB: LIST (current UI) -->
         <section id="tab-list" class="tabpage active">

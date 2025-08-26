@@ -187,6 +187,22 @@ function updateCounter(){
   const n = activeMeals.size;
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
+
+function updateProgressRing(){
+  const svg = document.getElementById('progressRing');
+  if (!svg) return;
+  const circle = svg.querySelector('.ring-progress');
+  if (!circle) return;
+  const total = Object.keys(activeItems).length;
+  const checked = Object.values(activeItems).filter(i => i.checked).length;
+  const radius = circle.r.baseVal.value;
+  const circumference = 2 * Math.PI * radius;
+  circle.style.strokeDasharray = `${circumference}`;
+  const offset = circumference - (total ? (checked / total) : 0) * circumference;
+  circle.style.strokeDashoffset = offset;
+  const complete = total > 0 && checked === total;
+  svg.classList.toggle('completed', complete);
+}
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
   cloudDocs.forEach(d => {
@@ -200,6 +216,7 @@ function setActiveFromCloud(cloudDocs){
   refreshKnownItems();
   renderList();
   setClearCtaVisible(cloudDocs.length > 0);
+  updateProgressRing();
 }
 
 // MVP STEP-1: toggle visibility of bottom clear CTA
@@ -282,6 +299,8 @@ function renderList(){
       // Checkbox toggle
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
+        activeItems[name].checked = cb.checked;
+        updateProgressRing();
         await cloudToggleCheck(name, cb.checked);
       });
 
@@ -313,6 +332,8 @@ function renderList(){
 
     ul.appendChild(li);
   });
+
+  updateProgressRing();
 }
 
 
