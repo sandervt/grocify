@@ -71,12 +71,13 @@ h1 {
 #progressRing{
   width:2.5rem;
   height:2.5rem;
-  transform:rotate(-90deg);
   flex-shrink:0;
 }
 #progressRing circle{
   fill:none;
   stroke-width:4;
+  transform:rotate(-90deg);
+  transform-origin:50% 50%;
 }
 #progressRing .ring-bg{
   stroke:var(--border);
@@ -105,9 +106,9 @@ h1 {
   animation:ring-pop .6s ease;
 }
 @keyframes ring-pop{
-  0%{transform:rotate(-90deg) scale(1);}
-  50%{transform:rotate(-90deg) scale(1.1);}
-  100%{transform:rotate(-90deg) scale(1);}
+  0%{transform:scale(1);}
+  50%{transform:scale(1.1);}
+  100%{transform:scale(1);}
 }
 
 .section-label {
