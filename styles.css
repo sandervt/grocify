@@ -792,3 +792,190 @@ dialog.items-manager { border:none; border-radius:12px; padding:0; width:min(720
   display: none;                       /* closed by default */
 }
 .tabbar .overflow.is-open .menu{ display: block; }
+
+/* ==== GROCiFY: additive overrides (append-only) ==== */
+
+/* Ensure we have a shared height for the bottom tabbar */
+:root { --tabbar-h: 64px; }
+
+/* Put the FAB above the tab bar so it doesn't overlap */
+.fab{
+  position: fixed !important;
+  right: 16px;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  z-index: 1110;
+}
+
+/* Canonical bottom tab bar layout (safe to override earlier rules) */
+.tabbar{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: var(--tabbar-h);
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 8px;
+  z-index: 1000;
+}
+
+/* Evenly distribute the three main tabs (keep existing button look) */
+#tabbtn-list,
+#tabbtn-recipes,
+#tabbtn-stores{
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* --- Overflow (⋮) menu: show above the bar --- */
+.tabbar .overflow{ position: relative; margin-left: 8px; z-index: 1100; }
+.tabbar .overflow > button{
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* If you have a generic `.overflow .menu{ top:36px; }` earlier, this overrides it here */
+.tabbar .menu{
+  position: absolute;
+  right: 0;
+  top: auto;                        /* override generic 'top' positioning */
+  bottom: calc(100% + 6px);         /* show ABOVE the bar */
+  min-width: 220px;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(0,0,0,.08);
+  display: none;                    /* closed by default; toggled via .is-open */
+  z-index: 1200;
+}
+.tabbar .overflow.is-open .menu{ display: block; }
+
+/* --- Snackbar host (undo) --- */
+#snackbar{
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  z-index: 1300;
+  pointer-events: none;             /* clicks only on child */
+}
+.snackbar{
+  pointer-events: all;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(17,24,39,.95);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  max-width: 92vw;
+}
+.snackbar__label{ font-size: .95rem; }
+.snackbar__btn{
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ==== Overflow bottom-sheet panel (append-only) ==== */
+:root { --tabbar-h: 64px; }
+
+.tabbar .overflow { position: relative; z-index: 1100; }
+.tabbar .overflow > #overflowBtn{
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Panel shell */
+.tabbar .overflow-panel{
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);            /* sit above tabbar */
+  width: min(92vw, 320px);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 14px 28px rgba(0,0,0,.12);
+  display: none;                        /* toggled by JS */
+  overflow: hidden;
+  transform-origin: bottom right;
+  transition: opacity 140ms ease, transform 140ms ease;
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+}
+
+/* Open state (JS toggles body class) */
+body.overflow-open .tabbar .overflow-panel{
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Action list */
+.tabbar .overflow-panel .overflow-list{
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  max-height: 46vh;                     /* safe cap */
+  overflow: auto;
+}
+.tabbar .overflow-panel .overflow-list li{ margin: 0; }
+.tabbar .overflow-panel .overflow-list li > button{
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  color: #0f172a;
+}
+.tabbar .overflow-panel .overflow-list li > button:hover{
+  background: #f8fafc;
+}
+
+/* Integrated FAB area */
+.tabbar .overflow-panel .overflow-fab{
+  border-top: 1px solid #e2e8f0;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  background: #fff;
+}
+.overflow-fab-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 16px;
+}
+
+/* Hide/disable the global floating FAB while panel is open */
+body.overflow-open .fab{
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+/* Make sure the panel layers above other UI */
+.tabbar .overflow-panel{ z-index: 9999; }

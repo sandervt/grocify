@@ -581,9 +581,6 @@ function wireClearList(){
     const snap = await itemsCol.get();
     if (snap.empty) return;
 
-    const ok = window.confirm("Weet je zeker dat je de hele lijst wilt leegmaken? Je kunt dit ongedaan maken.");
-    if (!ok) return;
-
     const prevItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     let prevMeals = [];
     try {

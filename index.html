@@ -116,14 +116,28 @@
           <button id="tabbtn-recipes" role="tab" aria-controls="tab-recipes"><span>🍳</span>Recepten</button>
           <button id="tabbtn-stores" role="tab" aria-controls="tab-stores"><span>🏬</span>Winkels</button>
 
-        <!-- ⋮ overflow -->
+          <!-- ⋮ overflow (bottom-sheet style) -->
           <div class="overflow">
-            <button id="overflowBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="overflowMenu" title="Meer">⋮</button>
-            <ul id="overflowMenu" class="menu" role="menu">
-              <li role="menuitem"><button id="miManageIngredients">🥕 Ingrediënten beheren</button></li>
-            </ul>
+            <button id="overflowBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="overflowPanel" title="Meer">⋮</button>
+
+            <!-- Bottom-sheet style panel -->
+            <div id="overflowPanel" class="overflow-panel" role="menu" aria-label="Meer acties">
+              <ul class="overflow-list">
+                <li role="menuitem">
+                  <button id="miManageIngredients">🥕 Ingrediënten beheren</button>
+                </li>
+                <!-- future options go here -->
+                <!-- <li role="menuitem"><button>⚙️ Instellingen</button></li> -->
+              </ul>
+
+              <!-- Integrated FAB action -->
+              <div class="overflow-fab">
+                <button id="fabInOverflow" class="btn primary overflow-fab-btn" title="Item toevoegen">＋ Item toevoegen</button>
+              </div>
+            </div>
           </div>
-        </nav>
+
+        <div id="snackbar"></div>
 
     <!-- ARIA live announcements -->
     <div id="ariaLive" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
