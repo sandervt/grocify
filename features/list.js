@@ -8,6 +8,7 @@ let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 let showCompleted = false;
+let lastComplete = false;
 
 /** Recents (STEP-3) */
 const RECENTS_KEY = "grocify_recents_v1";
@@ -205,6 +206,11 @@ function updateProgressRing(){
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
+  if (complete && !lastComplete) {
+    const rect = svg.getBoundingClientRect();
+    playConfetti(rect);
+  }
+  lastComplete = complete;
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
@@ -837,4 +843,71 @@ async function deleteItemWithUndo(name){
     delete data.updatedAt;
     await ref.set(data, { merge: true });
   });
+}
+
+/* ---- Joyful micro-animations ---- */
+function playBalloon(rect){
+  const host = document.createElement('div');
+  host.className = 'balloon';
+  host.style.position = 'fixed';
+  host.style.left = `${rect.left + rect.width / 2}px`;
+  host.style.top = `${rect.top}px`;
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = 1000;
+  host.textContent = '🎈';
+  document.body.appendChild(host);
+  requestAnimationFrame(() => {
+    host.style.transition = 'transform .8s ease-out, opacity .8s';
+    host.style.transform = 'translateY(-40px)';
+    host.style.opacity = '0';
+  });
+  setTimeout(() => host.remove(), 800);
+}
+
+function playStars(rect){
+  const wrap = document.createElement('div');
+  wrap.className = 'stars';
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width}px`;
+  document.body.appendChild(wrap);
+  const colors = ['#facc15', '#fcd34d', '#fde68a'];
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('span');
+    s.textContent = '★';
+    s.style.left = `${Math.random() * rect.width}px`;
+    s.style.fontSize = `${8 + Math.random() * 6}px`;
+    s.style.color = colors[Math.floor(Math.random() * colors.length)];
+    s.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    s.style.animationDelay = `${Math.random() * 100}ms`;
+    wrap.appendChild(s);
+  }
+  setTimeout(() => wrap.remove(), 800);
+}
+
+function playConfetti(rect){
+  const r = Math.random();
+  if (r < 0.33) return playBalloon(rect);
+  if (r < 0.66) return playStars(rect);
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  wrap.style.position = 'fixed';
+  wrap.style.pointerEvents = 'none';
+  wrap.style.zIndex = 1000;
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  document.body.appendChild(wrap);
+  const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308'];
+  for (let i = 0; i < 12; i++) {
+    const piece = document.createElement('span');
+    piece.style.position = 'absolute';
+    piece.style.width = '4px';
+    piece.style.height = '8px';
+    piece.style.left = `${Math.random() * rect.width}px`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    piece.style.animation = 'star-fall 0.8s linear forwards';
+    wrap.appendChild(piece);
+  }
+  setTimeout(() => wrap.remove(), 800);
 }
