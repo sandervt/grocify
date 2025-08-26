@@ -14,6 +14,7 @@ html, body { overflow-x: hidden; }
   --border: #e2e8f0;
   --radius: 12px;
   --tabbar-h: 64px;
+  --section-pad: 16px;
 }
 
 body{
@@ -144,7 +145,7 @@ details.section > summary{
 details.section > summary::-webkit-details-marker{ display:none; }
 details.section[open] > summary{ background:#eaefff; }
 .section__chev { font-weight:700; width:1.1em; text-align:center; }
-.section__body { padding:14px; background:#fff; }
+.section__body { padding: var(--section-pad); background:#fff; }
 
 /* ========== Meals row (single-line horizontal scroll) ========== */
 .meal-row{
