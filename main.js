@@ -221,13 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  // Lazy import manager dialog when clicked
-  document.getElementById('miManageIngredients')?.addEventListener('click', async () => {
-    closeOverflow();
-    const mod = await import('./features/items.js');
-    mod.openItemsManagerDialog?.();
-  });
-
   // Features
   initListFeature();
   initRecipesFeature();
