@@ -793,16 +793,21 @@ async function deleteItemWithUndo(name){
 }
 
 function playConfetti(row){
-  if (!row) return;
-  if (getComputedStyle(row).position === "static") row.style.position = "relative";
+  if (!row || !document.body) return;
+  const rect = row.getBoundingClientRect();
   const wrap = document.createElement("div");
   wrap.className = "confetti";
+  wrap.style.top = rect.top + window.scrollY + "px";
+  wrap.style.left = rect.left + window.scrollX + "px";
+  wrap.style.width = rect.width + "px";
+  wrap.style.height = rect.height + "px";
   for (let i = 0; i < 8; i++) {
     const s = document.createElement("span");
     s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 100 + "%";
     s.style.animationDelay = i * 0.05 + "s";
     wrap.appendChild(s);
   }
-  row.appendChild(wrap);
+  document.body.appendChild(wrap);
   setTimeout(() => wrap.remove(), 1000);
 }
