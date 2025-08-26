@@ -1,3 +1,41 @@
+# Overview
+This repository hosts a small, Firebase-backed grocery/shopping-list web app written entirely in vanilla JavaScript modules and a single HTML/CSS front end. The app runs in the browser, storing all persistent data in Firestore and syncing state in real time.
+
+# High-level structure
+| Path/Module | Purpose |
+|-------------|---------|
+| `index.html` | The only HTML file. Defines the app shell, tabbed layout (“List”, “Recipes”, “Stores”, “Items”), the bottom‑sheet composer for adding items, the overflow menu, snackbar host, and ARIA live region. Loads Firebase compat scripts and the top‑level `main.js`. |
+| `styles.css` | Global CSS variables, layout rules, bottom-sheet styles, tab bar, snackbar, badges, etc.|
+| `main.js` | Entry point. Initializes Firebase, the tab router, the global “Undo” snackbar API, bottom‑sheet controller, overflow menu, and lazy loads features. |
+| `firebase.js` | Thin wrapper around Firebase compat SDK. Sets up anonymous auth, enables persistence, and exports references to Firestore collections (`listItems`, `recipes`, `stores`, `itemsCatalog`, and `meta/uiState`) plus helpers (`inc`, `arrAdd`, `arrDel`, `slug`). |
+| `data/catalog.js` | Static domain data: canonical section order, seed recipe items, weekly groups, map of known items → sections, and helper functions (`inferSection`, `suggestMatches`). |
+| `features/` | Modular feature files, each initialized from `main.js`:  \
+  * **`list.js`** – Core shopping-list logic. Subscribes to Firestore for list items, recipes, and UI state; merges “standard” and custom recipes; manages recents/favorites; renders items and meal pills; handles bottom‑sheet composer, parsing, suggestion chips, quantity adjustments, deletion with undo, and accessibility announcements.  \
+  * **`recipes.js`** – CRUD for recipes. Renders recipe cards, handles “select recipe” state, and provides a dialog for adding/editing recipes. Removing a recipe adjusts list counts accordingly.  \
+  * **`stores.js`** – Manages store profiles (name + category order). Supports CRUD, active‑store selection, reordering categories via a simple dialog, and exposes `currentSectionOrder()` used elsewhere.  \
+  * **`items.js`** – Ingredient catalog manager. Shows items grouped by (possibly store‑specific) section, allows editing aliases/overrides, and exposes `openItemsManagerDialog()` for on‑demand loading. |
+
+# Key concepts & flows
+1. **Firebase data model** – All user data lives under `households/{id}` in Firestore; collections correspond to list items, recipes, stores, and the items catalog.  \
+2. **Real-time state** – Each feature listens to its collection(s) with `onSnapshot`, enabling multi‑client sync.  \
+3. **Bottom-sheet composer** – Opening/closing is coordinated via DOM events (`composer:open`, `composer:close`, `composer:request-close`) and is extended in `list.js` for parsing inputs, suggestions, and inactivity auto-close.  \
+4. **Undo snackbar** – `main.js` installs `window.GrocifyUndo.show()`, letting features offer undo after destructive actions by providing a label and rollback callback.  \
+5. **Tab router** – Uses hash (`#/list`) + `localStorage` to keep the active tab; navigation buttons exist both at top and bottom for accessibility.
+
+# Tips for new contributors
+- **Start with `main.js`** to understand app bootstrapping and how features are wired.
+- **Inspect `firebase.js`** to grasp the Firestore schema and helper utilities.
+- **Read `features/list.js`** next—it's the largest module and demonstrates real-time data handling, suggestions, undo, and accessibility patterns.
+- **Check `data/catalog.js`** for the static domain model: section names, sample meals, and helper functions used across features.
+- **Explore the other feature modules** (`recipes.js`, `stores.js`, `items.js`) to see how each encapsulates a tab or dialog with its own Firestore listeners and DOM wiring.
+
+# What to learn next
+- **Firebase Firestore** basics: collections, documents, real-time listeners, security rules, and batched writes.
+- **Modern browser APIs** used here: `localStorage`, `CustomEvent`, `dialog`, `aria` attributes, and touch handling.
+- **Modular JavaScript without build tools**: ES modules in the browser, dynamic `import()`, and working without frameworks.
+- **Progressive enhancement & accessibility**: bottom sheets, snackbar ARIA announcements, keyboard navigation for tabs.
+- **State management patterns** with real-time databases: optimistic UI updates, undo/redo stacks, and conflict handling.
+
 /index.html
 /styles.css
 /app/main.js                // bootstraps app
