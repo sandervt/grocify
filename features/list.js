@@ -69,10 +69,15 @@ export function initListFeature(){
   // meals state live
   stateDoc.onSnapshot(
     doc => {
-      const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
+      const data = doc.data() || {};
+      const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
       activeMeals = new Set(arr);
       reflectMealPillsFromState();
       updateCounter();
+      window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
+      if (Array.isArray(data.readyMeals)) {
+        window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: data.readyMeals } }));
+      }
     },
     err => console.error("onSnapshot state error", err)
   );
@@ -193,13 +198,15 @@ function updateCounter(){
 }
 
 export function updateProgressRing(){
+  const total = Object.keys(activeItems).length;
+  const checked = Object.values(activeItems).filter(i => i.checked).length;
+  checkListCompletion(total, checked);
+
   const svg = document.getElementById('progressRing');
   if (!svg) return;
   const circle = svg.querySelector('.ring-progress');
   if (!circle) return;
 
-  const total = Object.keys(activeItems).length;
-  const checked = Object.values(activeItems).filter(i => i.checked).length;
   const progress = total ? (checked / total) : 0;
   const onList = document.getElementById('tab-list')?.classList.contains('active');
 
@@ -213,6 +220,19 @@ export function updateProgressRing(){
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
   svg.classList.toggle('floating', onList && progress > 0);
+}
+
+function checkListCompletion(total, checked){
+  const complete = total === 0 || (total > 0 && checked === total);
+  if (complete && !lastComplete){
+    lastComplete = true;
+    if (activeMeals.size > 0){
+      const ready = [...activeMeals];
+      stateDoc.set({ readyMeals: ready, activeMeals: [] }, { merge: true }).catch(e => console.error('state update failed', e));
+    }
+  }else if(!complete){
+    lastComplete = false;
+  }
 }
 
 function setActiveFromCloud(cloudDocs){
@@ -647,7 +667,7 @@ function wireClearList(){
 
     // Reset local UI states
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
-    updateCounter();
+    // Counter will update via state snapshot
 
     // Undo
     if (window.GrocifyUndo && typeof window.GrocifyUndo.show === "function") {
@@ -758,8 +778,6 @@ async function cloudClearList(){
   const batch = firebase.firestore().batch();
   snap.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
-  activeMeals = new Set();
-  await saveMealState();
 }
 // ===== HELPERS =====
 // Toggle one-tap add for suggestion chips
