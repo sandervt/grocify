@@ -121,14 +121,6 @@ function renderCard(name, items, isCustom, isActive){
   right.append(badgeCount, badgeSel, badgeStatus);
   header.append(title, right);
 
-  const tags = document.createElement('div');
-  tags.className = 'tags';
-  items.slice(0, 24).forEach(i => {
-    const t = document.createElement('span');
-    t.textContent = i;
-    tags.appendChild(t);
-  });
-
   const actions = document.createElement('div');
   actions.className = 'actions';
 
@@ -151,7 +143,7 @@ function renderCard(name, items, isCustom, isActive){
     actions.append(ro);
   }
 
-  card.append(header, tags, actions);
+  card.append(header, actions);
   return card;
 }
 

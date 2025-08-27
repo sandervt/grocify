@@ -414,10 +414,6 @@ dialog{
   color:#475569;
 }
 .recipe-card header{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.recipe-card .tags{ display:flex; flex-wrap:wrap; gap:6px; }
-.recipe-card .tags span{
-  background:#eef2ff; border-radius:999px; padding:2px 8px; font-size:.75rem; color:#0f172a;
-}
 .recipe-card .actions{ display:flex; gap:8px; justify-content:flex-end; }
 .btn{ border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:.9rem; }
 .btn.primary{ background:var(--primary); color:#fff; }
