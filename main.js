@@ -1,5 +1,5 @@
 import { initFirebase } from "./firebase.js";
-import { initListFeature } from "./features/list.js";
+import { initListFeature, updateProgressRing } from "./features/list.js";
 import { initRecipesFeature } from "./features/recipes.js";
 import { initStoresFeature } from "./features/stores.js";
 
@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setActive(name){
       Object.entries(pages).forEach(([k,el]) => el?.classList.toggle("active", k===name));
+
       // there are two sets of tab buttons (top + bottom), select all
       Object.entries(buttons).forEach(([k,nodeList]) => nodeList.forEach(btn => {
         btn?.setAttribute("aria-selected", String(k===name));
@@ -123,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
       localStorage.setItem(STORAGE_KEY, name);
       location.hash = `#/${name}`;
+      updateProgressRing();
     }
 
     function syncFromHash(){
