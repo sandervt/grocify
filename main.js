@@ -221,6 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
     mod.openItemsManagerDialog?.();
   });
 
+  /* Recipes management action */
+  document.getElementById('miManageRecipes')?.addEventListener('click', () => {
+    closeOverflow();
+    // navigate to the recipes management view
+    location.hash = '#/recipes';
+  });
+
   // Open Winkels from overflow (no tab button needed)
   document.getElementById('miStores')?.addEventListener('click', () => {
     closeOverflow();
