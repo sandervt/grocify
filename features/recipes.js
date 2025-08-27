@@ -84,6 +84,9 @@ function renderRecipesPage(){
     return;
   }
 
+  const ready = [];
+  const other = [];
+
   names.forEach(name => {
     const items = combinedMeals[name] || [];
     const isCustom = !!customRecipeDocs[name];
@@ -142,9 +145,29 @@ function renderCard(name, items, isCustom, isActive){
     ro.textContent = 'Standaard recept';
     actions.append(ro);
   }
+  
+    card.append(header, tags, actions);
 
-  card.append(header, actions);
-  return card;
+    (readyMeals.has(name) ? ready : other).push(card);
+  });
+
+  if(ready.length){
+    const h = document.createElement('h3');
+    h.textContent = 'Ready to cook';
+    h.style.gridColumn = '1 / -1';
+    h.style.margin = '0';
+    recipesListEl.appendChild(h);
+    ready.forEach(card => recipesListEl.appendChild(card));
+  }
+
+  if(other.length){
+    const h = document.createElement('h3');
+    h.textContent = 'Other recipes';
+    h.style.gridColumn = '1 / -1';
+    h.style.margin = '0';
+    recipesListEl.appendChild(h);
+    other.forEach(card => recipesListEl.appendChild(card));
+  }
 }
 
 /* ---------- Dialog ---------- */
