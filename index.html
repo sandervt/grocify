@@ -33,6 +33,8 @@
             <!-- ⬇️ KEEP your existing List UI inside this section ⬇️ -->
             <ul class="shopping-list" id="shoppingList"></ul>
 
+            <button id="toggleCompletedBtn" class="clear-list" style="display:none;">Afgevinkte items tonen</button>
+
             <!-- Your existing FAB & Clear button stay here (only relevant on List tab) -->
             <button id="fabAdd" class="fab" title="Item toevoegen">＋</button>
             <!-- Bottom-sheet composer (new) -->
@@ -99,7 +101,7 @@
 
         <!-- TAB: STORES -->
         <section id="tab-stores" class="tabpage">
-            <div class="section__body" style="padding: 16px;">
+            <div class="section__body">
                 <h2 style="margin: 0 0 8px;">🏬 Winkels</h2>
                 <p style="color: #64748b; margin: 0;">Hier beheer je winkelprofielen, stel je een actieve winkel in en pas je de categorievolgorde aan.</p>
             </div>
@@ -107,7 +109,7 @@
 
       <!-- TAB: ITEMS (catalog manager) -->
         <section id="tab-items" class="tabpage">
-          <div class="section__body" style="padding:16px;">
+          <div class="section__body">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
               <h2 style="margin:0;">🥕 Ingrediënten</h2>
               <button id="itemAddBtn" class="btn primary">Nieuw ingrediënt</button>

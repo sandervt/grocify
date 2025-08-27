@@ -7,6 +7,8 @@ let activeItems = {};                   // { name: { count, sources:Set, checked
 let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
+let showCompleted = false;
+let lastComplete = false;
 
 /** Recents (STEP-3) */
 const RECENTS_KEY = "grocify_recents_v1";
@@ -98,7 +100,9 @@ export function initListFeature(){
   wireDetailsSections();
   wireAddDialog();
   wireClearList();
+  wireToggleCompleted();
   setClearCtaVisible(false);
+  setToggleCompletedVisible(false);
 
   // Refresh suggestions on composer open (STEP-3)
   document.addEventListener('composer:open', () => {
@@ -211,6 +215,26 @@ export function updateProgressRing(){
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
   svg.classList.toggle('floating', onList && progress > 0);
+
+//   const circle = svg ? svg.querySelector('.ring-progress') : null;
+//   const total = Object.keys(activeItems).length;
+//   const checked = Object.values(activeItems).filter(i => i.checked).length;
+//   const complete = total > 0 && checked === total;
+
+//   if (svg && circle) {
+//     const radius = circle.r.baseVal.value;
+//     const circumference = 2 * Math.PI * radius;
+//     circle.style.strokeDasharray = `${circumference}`;
+//     const offset = circumference - (total ? (checked / total) : 0) * circumference;
+//     circle.style.strokeDashoffset = offset;
+//     svg.classList.toggle('completed', complete);
+//   }
+
+//   if (complete && !lastComplete) {
+//     const rect = svg ? svg.getBoundingClientRect() : document.body.getBoundingClientRect();
+//     playConfetti(rect);
+//   }
+//   lastComplete = complete;
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
@@ -225,7 +249,6 @@ function setActiveFromCloud(cloudDocs){
   refreshKnownItems();
   renderList();
   setClearCtaVisible(cloudDocs.length > 0);
-  updateProgressRing();
 }
 
 // MVP STEP-1: toggle visibility of bottom clear CTA
@@ -235,12 +258,25 @@ function setClearCtaVisible(hasItems){
   btn.style.display = hasItems ? 'block' : 'none';
 }
 
+function setToggleCompletedVisible(hasChecked){
+  const btn = document.getElementById('toggleCompletedBtn');
+  if (!btn) return;
+  btn.style.display = hasChecked ? 'block' : 'none';
+}
+
 function renderList(){
   const ul = document.getElementById("shoppingList");
   if (!ul) return;
 
   // Clear current DOM
   ul.innerHTML = "";
+
+  const hasChecked = Object.values(activeItems).some(i => i.checked);
+  const toggleBtn = document.getElementById('toggleCompletedBtn');
+  if (toggleBtn) {
+    toggleBtn.textContent = showCompleted ? 'Afgevinkte items verbergen' : 'Afgevinkte items tonen';
+  }
+  setToggleCompletedVisible(hasChecked);
 
   // One global click handler to close any open overflow menus
   if (window.__grocifyCloseMenus) {
@@ -261,7 +297,9 @@ function renderList(){
     const items = Object.keys(activeItems)
       .filter(name => (ITEM_TO_SECTION[name] || inferSection(name)) === section);
 
-    if (items.length === 0) return;
+    const uncheckedCount = items.filter(n => !activeItems[n].checked).length;
+    const visibleItems = showCompleted ? items : items.filter(n => !activeItems[n].checked);
+    if (visibleItems.length === 0) return;
 
     const li = document.createElement("li");
     li.className = "section";
@@ -269,14 +307,14 @@ function renderList(){
       <div class="section__header">
         <h3>${section}</h3>
         <span class="section__count">
-          ${items.filter(n => !activeItems[n].checked).length}/${items.length}
+          ${uncheckedCount}/${items.length}
         </span>
       </div>
       <ul class="section__items"></ul>
     `;
     const inner = li.querySelector(".section__items");
 
-    items.sort((a,b) => a.localeCompare(b)).forEach(name => {
+    visibleItems.sort((a,b) => a.localeCompare(b)).forEach(name => {
       const data = activeItems[name];
       const row = document.createElement("li");
       row.className = "item-row";
@@ -308,8 +346,16 @@ function renderList(){
       // Checkbox toggle
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         activeItems[name].checked = cb.checked;
-        updateProgressRing();
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
+        renderList();
         await cloudToggleCheck(name, cb.checked);
       });
 
@@ -643,6 +689,16 @@ function wireClearList(){
 
 }
 
+function wireToggleCompleted(){
+  const btn = document.getElementById('toggleCompletedBtn');
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    showCompleted = !showCompleted;
+    renderList();
+  });
+  btn.textContent = showCompleted ? 'Afgevinkte items verbergen' : 'Afgevinkte items tonen';
+}
+
 /* --- Unified floating tray (icon-only) --- */
 function unifyFloatingActions(){
   const fab   = document.getElementById('fabAdd');
@@ -819,4 +875,75 @@ async function deleteItemWithUndo(name){
     delete data.updatedAt;
     await ref.set(data, { merge: true });
   });
+}
+
+/* ---- Joyful micro-animations ---- */
+function playBalloon(rect){
+  const host = document.createElement('div');
+  host.className = 'balloon';
+  host.style.position = 'fixed';
+  host.style.left = `${rect.left + rect.width / 2}px`;
+  host.style.top = `${rect.top}px`;
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = 1000;
+  host.style.fontSize = '24px';
+  host.textContent = '🎈';
+  document.body.appendChild(host);
+  requestAnimationFrame(() => {
+    host.style.transition = 'transform .8s ease-out, opacity .8s';
+    host.style.transform = 'translateY(-40px)';
+    host.style.opacity = '0';
+  });
+  setTimeout(() => host.remove(), 800);
+}
+
+function playStars(rect){
+  const wrap = document.createElement('div');
+  wrap.className = 'stars';
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
+  document.body.appendChild(wrap);
+  const colors = ['#facc15', '#fcd34d', '#fde68a'];
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('span');
+    s.textContent = '★';
+    s.style.left = `${Math.random() * rect.width}px`;
+    s.style.fontSize = `${8 + Math.random() * 6}px`;
+    s.style.color = colors[Math.floor(Math.random() * colors.length)];
+    s.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    s.style.animationDelay = `${Math.random() * 100}ms`;
+    wrap.appendChild(s);
+  }
+  setTimeout(() => wrap.remove(), 800);
+}
+
+function playConfetti(rect){
+  const r = Math.random();
+  if (r < 0.33) return playBalloon(rect);
+  if (r < 0.66) return playStars(rect);
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  wrap.style.position = 'fixed';
+  wrap.style.pointerEvents = 'none';
+  wrap.style.zIndex = 1000;
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
+  document.body.appendChild(wrap);
+  const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308'];
+  for (let i = 0; i < 12; i++) {
+    const piece = document.createElement('span');
+    piece.style.position = 'absolute';
+    piece.style.width = '4px';
+    piece.style.height = '8px';
+    piece.style.left = `${Math.random() * rect.width}px`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    piece.style.animation = 'star-fall 0.8s linear forwards';
+    wrap.appendChild(piece);
+  }
+  setTimeout(() => wrap.remove(), 800);
 }
