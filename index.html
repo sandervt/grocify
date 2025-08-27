@@ -79,7 +79,10 @@
         <section id="tab-recipes" class="tabpage">
             <div class="recipes-toolbar">
                 <h2 style="margin: 0;">🍳 Recepten</h2>
-                <button id="newRecipeBtn" class="btn primary">Nieuw recept</button>
+                <div style="display:flex;gap:8px;">
+                    <button id="resetReadyMealsBtn" class="btn ghost" style="display:none;">Reset gereed</button>
+                    <button id="newRecipeBtn" class="btn primary">Nieuw recept</button>
+                </div>
             </div>
             <div id="recipesList" class="recipes-grid"></div>
         </section>

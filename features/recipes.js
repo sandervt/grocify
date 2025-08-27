@@ -5,23 +5,26 @@ import { MEAL_DATA } from "../data/catalog.js";
 let customRecipeDocs = {};    // name -> { id, items }
 let combinedMeals    = {};    // name -> items[]
 let activeMeals      = new Set();
+let readyMeals       = new Set();
 
 /** DOM refs in the Recipes tab */
-let recipesListEl, newRecipeBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
+let recipesListEl, newRecipeBtn, resetReadyMealsBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
 
 export function initRecipesFeature(){
   // cache DOM
-  recipesListEl     = document.getElementById('recipesList');
-  newRecipeBtn      = document.getElementById('newRecipeBtn');
-  recipeDialog      = document.getElementById('recipeDialog');
-  recipeNameInput   = document.getElementById('recipeNameInput');
-  recipeItemsInput  = document.getElementById('recipeItemsInput');
-  recipeSaveBtn     = document.getElementById('recipeSaveBtn');
-  recipeCancelBtn   = document.getElementById('recipeCancelBtn');
-  recipeDeleteBtn   = document.getElementById('recipeDeleteBtn');
-  ingSuggestionsBox = document.getElementById('ingSuggestions');
+  recipesListEl      = document.getElementById('recipesList');
+  newRecipeBtn       = document.getElementById('newRecipeBtn');
+  resetReadyMealsBtn = document.getElementById('resetReadyMealsBtn');
+  recipeDialog       = document.getElementById('recipeDialog');
+  recipeNameInput    = document.getElementById('recipeNameInput');
+  recipeItemsInput   = document.getElementById('recipeItemsInput');
+  recipeSaveBtn      = document.getElementById('recipeSaveBtn');
+  recipeCancelBtn    = document.getElementById('recipeCancelBtn');
+  recipeDeleteBtn    = document.getElementById('recipeDeleteBtn');
+  ingSuggestionsBox  = document.getElementById('ingSuggestions');
 
   if (newRecipeBtn) newRecipeBtn.addEventListener('click', () => openRecipeDialog(null));
+  if (resetReadyMealsBtn) resetReadyMealsBtn.addEventListener('click', resetReadyState);
   if (recipeCancelBtn) recipeCancelBtn.addEventListener('click', () => recipeDialog.close());
 
   // Delete inside dialog
@@ -49,9 +52,15 @@ export function initRecipesFeature(){
 
   stateDoc.onSnapshot(
     doc => {
-      const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
-      activeMeals = new Set(arr);
-      renderRecipesPage(); // update "Geselecteerd" badges
+      const data = doc.data() || {};
+      const arrActive = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+      const arrReady  = Array.isArray(data.readyMeals) ? data.readyMeals : [];
+      activeMeals = new Set(arrActive);
+      readyMeals  = new Set(arrReady);
+      if (resetReadyMealsBtn) {
+        resetReadyMealsBtn.style.display = readyMeals.size > 0 ? 'inline-block' : 'none';
+      }
+      renderRecipesPage(); // update badges
     },
     err => console.error("uiState onSnapshot error", err)
   );
@@ -84,6 +93,7 @@ function renderRecipesPage(){
     const items = combinedMeals[name] || [];
     const isCustom = !!customRecipeDocs[name];
     const isActive = activeMeals.has(name);
+    const isReady  = readyMeals.has(name);
 
     const card = document.createElement('div');
     card.className = 'recipe-card';
@@ -101,7 +111,15 @@ function renderRecipesPage(){
     badgeSel.style.background = isActive ? '#dcfce7' : '#eef2ff';
     badgeSel.textContent = isActive ? 'Geselecteerd' : 'Niet geselecteerd';
 
-    right.append(badgeCount, badgeSel);
+    if (isReady) {
+      const badgeReady = document.createElement('span');
+      badgeReady.className = 'badge';
+      badgeReady.style.background = '#fef3c7';
+      badgeReady.textContent = 'Gereed';
+      right.append(badgeCount, badgeSel, badgeReady);
+    } else {
+      right.append(badgeCount, badgeSel);
+    }
     header.append(title, right);
 
     const tags = document.createElement('div');
@@ -201,6 +219,14 @@ async function onDialogDelete(){
   }
   await recipesCol.doc(editingRecipeId).delete();
   recipeDialog.close();
+}
+
+async function resetReadyState(){
+  try {
+    await stateDoc.set({ readyMeals: [] }, { merge: true });
+  } catch(err){
+    console.error('reset readyMeals failed', err);
+  }
 }
 
 /* ---------- Shared helpers ---------- */
