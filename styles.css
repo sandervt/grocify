@@ -629,14 +629,15 @@ body.modal-open { overflow: hidden; }
 .item-row__main { min-width: 0; }
 .item-row__actions { display: inline-flex; align-items: center; gap: 8px; }
 .btn-qty,
-.btn-overflow{
+.btn-overflow,
+.btn-icon{
   border: 1px solid var(--border);
   background: #fff;
   border-radius: 8px;
   width: 32px; height: 32px;
   font-size: 18px; line-height: 30px; padding: 0; cursor: pointer;
 }
-.btn-qty:hover, .btn-overflow:hover { background: #f8fafc; }
+.btn-qty:hover, .btn-overflow:hover, .btn-icon:hover { background: #f8fafc; }
 .item-row .qty {
   min-width: 20px;
   text-align: center;

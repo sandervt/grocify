@@ -58,7 +58,7 @@ export function initRecipesFeature(){
       activeMeals = new Set(arrActive);
       readyMeals  = new Set(arrReady);
       if (resetReadyMealsBtn) {
-        resetReadyMealsBtn.style.display = readyMeals.size > 0 ? 'inline-block' : 'none';
+        resetReadyMealsBtn.style.display = readyMeals.size > 0 ? 'inline-flex' : 'none';
       }
       renderRecipesPage(); // update badges
     },
