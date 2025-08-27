@@ -87,7 +87,13 @@ const Composer = (() => {
 document.addEventListener('DOMContentLoaded', () => {
   Composer.wire();
   const fab = document.getElementById('fabAdd');
-  fab?.addEventListener('click', () => Composer.open());
+  fab?.addEventListener('click', () => {
+    if (document.body.classList.contains('modal-open')) {
+      Composer.close();
+    } else {
+      Composer.open();
+    }
+  });
   document.addEventListener('composer:request-close', () => Composer.close());
 });
 

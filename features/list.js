@@ -324,6 +324,10 @@ function renderList(){
       // Checkbox toggle
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         activeItems[name].checked = cb.checked;
         if (cb.checked) {
           const rect = row.getBoundingClientRect();
