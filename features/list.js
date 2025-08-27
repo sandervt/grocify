@@ -199,7 +199,9 @@ export function updateProgressRing(){
   const progress = total ? (checked / total) : 0;
   const onList = document.getElementById('tab-list')?.classList.contains('active');
 
-  svg.hidden = !(onList && progress > 0);
+  // SVG elements don't honor the `.hidden` property, so toggle the attribute
+  // directly to show or hide the ring based on list visibility and progress.
+  svg.toggleAttribute('hidden', !(onList && progress > 0));
 
   const radius = circle.r.baseVal.value;
   const circumference = 2 * Math.PI * radius;
