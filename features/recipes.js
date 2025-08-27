@@ -222,8 +222,19 @@ async function onDialogDelete(){
 }
 
 async function resetReadyState(){
+  const prev = Array.from(readyMeals);
   try {
     await stateDoc.set({ readyMeals: [] }, { merge: true });
+
+    if (window.GrocifyUndo && typeof window.GrocifyUndo.show === 'function') {
+      window.GrocifyUndo.show('Gereedstatus gewist', async () => {
+        try {
+          await stateDoc.set({ readyMeals: prev }, { merge: true });
+        } catch (e) {
+          console.error('undo readyMeals reset failed', e);
+        }
+      });
+    }
   } catch(err){
     console.error('reset readyMeals failed', err);
   }
