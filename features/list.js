@@ -188,7 +188,7 @@ function updateCounter(){
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
 
-function updateProgressRing(){
+export function updateProgressRing(){
   const svg = document.getElementById('progressRing');
   if (!svg) return;
   const circle = svg.querySelector('.ring-progress');

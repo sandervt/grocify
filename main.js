@@ -1,5 +1,5 @@
 import { initFirebase } from "./firebase.js";
-import { initListFeature } from "./features/list.js";
+import { initListFeature, updateProgressRing } from "./features/list.js";
 import { initRecipesFeature } from "./features/recipes.js";
 import { initStoresFeature } from "./features/stores.js";
 
@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
       localStorage.setItem(STORAGE_KEY, name);
       location.hash = `#/${name}`;
+      updateProgressRing();
     }
 
     function syncFromHash(){
