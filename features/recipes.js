@@ -5,6 +5,7 @@ import { MEAL_DATA } from "../data/catalog.js";
 let customRecipeDocs = {};    // name -> { id, items }
 let combinedMeals    = {};    // name -> items[]
 let activeMeals      = new Set();
+let readyMeals       = new Set();
 
 /** DOM refs in the Recipes tab */
 let recipesListEl, newRecipeBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
@@ -51,7 +52,9 @@ export function initRecipesFeature(){
     doc => {
       const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
       activeMeals = new Set(arr);
-      renderRecipesPage(); // update "Geselecteerd" badges
+      const readyArr = (doc.exists && Array.isArray(doc.data().readyMeals)) ? doc.data().readyMeals : [];
+      readyMeals = new Set(readyArr);
+      renderRecipesPage(); // update badges and sections
     },
     err => console.error("uiState onSnapshot error", err)
   );
@@ -80,7 +83,11 @@ function renderRecipesPage(){
     return;
   }
 
-  names.forEach(name => {
+  const ready = [];
+  const other = [];
+  names.forEach(n => (readyMeals.has(n) ? ready : other).push(n));
+
+  const renderCard = (name) => {
     const items = combinedMeals[name] || [];
     const isCustom = !!customRecipeDocs[name];
     const isActive = activeMeals.has(name);
@@ -104,12 +111,6 @@ function renderRecipesPage(){
     right.append(badgeCount, badgeSel);
     header.append(title, right);
 
-    const tags = document.createElement('div');
-    tags.className = 'tags';
-    items.slice(0, 24).forEach(i => {
-      const t = document.createElement('span'); t.textContent = i; tags.appendChild(t);
-    });
-
     const actions = document.createElement('div');
     actions.className = 'actions';
 
@@ -130,9 +131,20 @@ function renderRecipesPage(){
       actions.append(ro);
     }
 
-    card.append(header, tags, actions);
+    card.append(header, actions);
     recipesListEl.appendChild(card);
-  });
+  };
+
+  if(ready.length){
+    const h = document.createElement('h3');
+    h.textContent = 'Ready to cook';
+    h.style.gridColumn = '1 / -1';
+    h.style.margin = '0';
+    recipesListEl.appendChild(h);
+    ready.forEach(renderCard);
+  }
+
+  other.forEach(renderCard);
 }
 
 /* ---------- Dialog ---------- */
