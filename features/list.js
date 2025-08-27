@@ -8,6 +8,7 @@ let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 let showCompleted = false;
+let lastComplete = false;
 
 /** Recents (STEP-3) */
 const RECENTS_KEY = "grocify_recents_v1";
@@ -193,18 +194,25 @@ function updateCounter(){
 
 function updateProgressRing(){
   const svg = document.getElementById('progressRing');
-  if (!svg) return;
-  const circle = svg.querySelector('.ring-progress');
-  if (!circle) return;
+  const circle = svg ? svg.querySelector('.ring-progress') : null;
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
-  const radius = circle.r.baseVal.value;
-  const circumference = 2 * Math.PI * radius;
-  circle.style.strokeDasharray = `${circumference}`;
-  const offset = circumference - (total ? (checked / total) : 0) * circumference;
-  circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
-  svg.classList.toggle('completed', complete);
+
+  if (svg && circle) {
+    const radius = circle.r.baseVal.value;
+    const circumference = 2 * Math.PI * radius;
+    circle.style.strokeDasharray = `${circumference}`;
+    const offset = circumference - (total ? (checked / total) : 0) * circumference;
+    circle.style.strokeDashoffset = offset;
+    svg.classList.toggle('completed', complete);
+  }
+
+  if (complete && !lastComplete) {
+    const rect = svg ? svg.getBoundingClientRect() : document.body.getBoundingClientRect();
+    playConfetti(rect);
+  }
+  lastComplete = complete;
 }
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
@@ -321,6 +329,10 @@ function renderList(){
           playConfetti(rect);
         }
         activeItems[name].checked = cb.checked;
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         renderList();
         await cloudToggleCheck(name, cb.checked);
       });
@@ -843,72 +855,73 @@ async function deleteItemWithUndo(name){
   });
 }
 
-function playConfetti(rect){
-  if (!rect || !document.body) return;
-  // Occasionally show a balloon instead of confetti
-  if (Math.random() < 0.2) {
-    playBalloon(rect);
-    return;
-  }
-  const wrap = document.createElement("div");
-  wrap.className = "confetti";
-  wrap.style.top = rect.top + window.scrollY + "px";
-  wrap.style.left = rect.left + window.scrollX + "px";
-  wrap.style.width = rect.width + "px";
-  wrap.style.height = rect.height + "px";
-  for (let i = 0; i < 14; i++) {
-    const s = document.createElement("span");
-    const side = Math.floor(Math.random() * 4);
-    let left, top, dx, dy;
-    const spread = 20 + Math.random() * 30;
-    switch (side) {
-      case 0: // top
-        left = Math.random() * 100;
-        top = 0;
-        dx = (Math.random() - 0.5) * 40;
-        dy = -spread;
-        break;
-      case 1: // right
-        left = 100;
-        top = Math.random() * 100;
-        dx = spread;
-        dy = (Math.random() - 0.5) * 40;
-        break;
-      case 2: // bottom
-        left = Math.random() * 100;
-        top = 100;
-        dx = (Math.random() - 0.5) * 40;
-        dy = spread;
-        break;
-      default: // left
-        left = 0;
-        top = Math.random() * 100;
-        dx = -spread;
-        dy = (Math.random() - 0.5) * 40;
-    }
-    s.style.left = left + "%";
-    s.style.top = top + "%";
-    s.style.setProperty("--dx", dx + "px");
-    s.style.setProperty("--dy", dy + "px");
-    s.style.animationDelay = i * 0.02 + "s";
-    wrap.appendChild(s);
-  }
-  document.body.appendChild(wrap);
-  setTimeout(() => wrap.remove(), 600);
+/* ---- Joyful micro-animations ---- */
+function playBalloon(rect){
+  const host = document.createElement('div');
+  host.className = 'balloon';
+  host.style.position = 'fixed';
+  host.style.left = `${rect.left + rect.width / 2}px`;
+  host.style.top = `${rect.top}px`;
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = 1000;
+  host.style.fontSize = '24px';
+  host.textContent = '🎈';
+  document.body.appendChild(host);
+  requestAnimationFrame(() => {
+    host.style.transition = 'transform .8s ease-out, opacity .8s';
+    host.style.transform = 'translateY(-40px)';
+    host.style.opacity = '0';
+  });
+  setTimeout(() => host.remove(), 800);
 }
 
-function playBalloon(rect){
-  const wrap = document.createElement("div");
-  wrap.className = "confetti";
-  wrap.style.top = rect.top + window.scrollY + "px";
-  wrap.style.left = rect.left + window.scrollX + "px";
-  wrap.style.width = rect.width + "px";
-  wrap.style.height = rect.height + "px";
-  const b = document.createElement("div");
-  b.className = "balloon";
-  const colors = ["var(--accent)", "var(--primary)", "var(--danger)"];
-  b.style.color = colors[Math.floor(Math.random() * colors.length)];
-  wrap.appendChild(b);
+function playStars(rect){
+  const wrap = document.createElement('div');
+  wrap.className = 'stars';
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
   document.body.appendChild(wrap);
-  setTimeout(() => wrap.remove(), 1200);
+  const colors = ['#facc15', '#fcd34d', '#fde68a'];
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('span');
+    s.textContent = '★';
+    s.style.left = `${Math.random() * rect.width}px`;
+    s.style.fontSize = `${8 + Math.random() * 6}px`;
+    s.style.color = colors[Math.floor(Math.random() * colors.length)];
+    s.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    s.style.animationDelay = `${Math.random() * 100}ms`;
+    wrap.appendChild(s);
+  }
+  setTimeout(() => wrap.remove(), 800);
+}
+
+function playConfetti(rect){
+  const r = Math.random();
+  if (r < 0.33) return playBalloon(rect);
+  if (r < 0.66) return playStars(rect);
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  wrap.style.position = 'fixed';
+  wrap.style.pointerEvents = 'none';
+  wrap.style.zIndex = 1000;
+  wrap.style.left = `${rect.left}px`;
+  wrap.style.top = `${rect.top}px`;
+  wrap.style.width = `${rect.width || 40}px`;
+  wrap.style.height = `${rect.height || 40}px`;
+  document.body.appendChild(wrap);
+  const colors = ['#ef4444', '#22c55e', '#3b82f6', '#eab308'];
+  for (let i = 0; i < 12; i++) {
+    const piece = document.createElement('span');
+    piece.style.position = 'absolute';
+    piece.style.width = '4px';
+    piece.style.height = '8px';
+    piece.style.left = `${Math.random() * rect.width}px`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.setProperty('--dx', `${Math.random() * 40 - 20}px`);
+    piece.style.animation = 'star-fall 0.8s linear forwards';
+    wrap.appendChild(piece);
+  }
+  setTimeout(() => wrap.remove(), 800);
 }

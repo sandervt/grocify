@@ -685,6 +685,24 @@ body.overflow-open .tabbar .overflow-panel{
   border-radius: 999px; padding: 10px 16px;
 }
 
+/* ===== Joy layer: stars ===== */
+.stars {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.stars span {
+  position: absolute;
+  top: 0;
+  font-size: 12px;
+  color: #facc15;
+  animation: star-fall 0.8s ease-out forwards;
+}
+
+@keyframes star-fall {
+  from { transform: translate(0,0); opacity: 1; }
+  to { transform: translate(var(--dx, 0), 40px); opacity: 0; }
 /* ========== Fireworks effect ========== */
 .confetti{
   pointer-events:none;
