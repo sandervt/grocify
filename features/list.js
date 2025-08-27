@@ -325,6 +325,10 @@ function renderList(){
       const cb = row.querySelector('input[type="checkbox"]');
       cb.addEventListener("change", async () => {
         activeItems[name].checked = cb.checked;
+        if (cb.checked) {
+          const rect = row.getBoundingClientRect();
+          playConfetti(rect);
+        }
         renderList();
         await cloudToggleCheck(name, cb.checked);
       });
