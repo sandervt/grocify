@@ -203,8 +203,6 @@ export function updateProgressRing(){
   const progress = total ? (checked / total) : 0;
   const onList = document.getElementById('tab-list')?.classList.contains('active');
 
-  // SVG elements don't honor the `.hidden` property, so toggle the attribute
-  // directly to show or hide the ring based on list visibility and progress.
   svg.toggleAttribute('hidden', !(onList && progress > 0));
 
   const radius = circle.r.baseVal.value;
@@ -215,27 +213,8 @@ export function updateProgressRing(){
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
   svg.classList.toggle('floating', onList && progress > 0);
-
-//   const circle = svg ? svg.querySelector('.ring-progress') : null;
-//   const total = Object.keys(activeItems).length;
-//   const checked = Object.values(activeItems).filter(i => i.checked).length;
-//   const complete = total > 0 && checked === total;
-
-//   if (svg && circle) {
-//     const radius = circle.r.baseVal.value;
-//     const circumference = 2 * Math.PI * radius;
-//     circle.style.strokeDasharray = `${circumference}`;
-//     const offset = circumference - (total ? (checked / total) : 0) * circumference;
-//     circle.style.strokeDashoffset = offset;
-//     svg.classList.toggle('completed', complete);
-//   }
-
-//   if (complete && !lastComplete) {
-//     const rect = svg ? svg.getBoundingClientRect() : document.body.getBoundingClientRect();
-//     playConfetti(rect);
-//   }
-//   lastComplete = complete;
 }
+
 function setActiveFromCloud(cloudDocs){
   activeItems = {};
   cloudDocs.forEach(d => {
