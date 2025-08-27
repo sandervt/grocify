@@ -5,6 +5,7 @@ import { MEAL_DATA } from "../data/catalog.js";
 let customRecipeDocs = {};    // name -> { id, items }
 let combinedMeals    = {};    // name -> items[]
 let activeMeals      = new Set();
+let readyMeals       = new Set();
 
 /** DOM refs in the Recipes tab */
 let recipesListEl, newRecipeBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
@@ -49,8 +50,11 @@ export function initRecipesFeature(){
 
   stateDoc.onSnapshot(
     doc => {
-      const arr = (doc.exists && Array.isArray(doc.data().activeMeals)) ? doc.data().activeMeals : [];
+      const data = doc.data() || {};
+      const arr  = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+      const readyArr = Array.isArray(data.readyMeals) ? data.readyMeals : [];
       activeMeals = new Set(arr);
+      readyMeals  = new Set(readyArr);
       renderRecipesPage(); // update "Geselecteerd" badges
     },
     err => console.error("uiState onSnapshot error", err)
@@ -79,6 +83,9 @@ function renderRecipesPage(){
     recipesListEl.appendChild(p);
     return;
   }
+
+  const ready = [];
+  const other = [];
 
   names.forEach(name => {
     const items = combinedMeals[name] || [];
@@ -131,8 +138,27 @@ function renderRecipesPage(){
     }
 
     card.append(header, tags, actions);
-    recipesListEl.appendChild(card);
+
+    (readyMeals.has(name) ? ready : other).push(card);
   });
+
+  if(ready.length){
+    const h = document.createElement('h3');
+    h.textContent = 'Ready to cook';
+    h.style.gridColumn = '1 / -1';
+    h.style.margin = '0';
+    recipesListEl.appendChild(h);
+    ready.forEach(card => recipesListEl.appendChild(card));
+  }
+
+  if(other.length){
+    const h = document.createElement('h3');
+    h.textContent = 'Other recipes';
+    h.style.gridColumn = '1 / -1';
+    h.style.margin = '0';
+    recipesListEl.appendChild(h);
+    other.forEach(card => recipesListEl.appendChild(card));
+  }
 }
 
 /* ---------- Dialog ---------- */
