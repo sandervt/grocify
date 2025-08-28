@@ -670,7 +670,7 @@ body.modal-open { overflow: hidden; }
   min-width: 20px;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  margin-right: 6px;
+  margin-left: 6px;
 }
 
 /* ========== Clear-list inline button ========== */

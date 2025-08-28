@@ -344,8 +344,7 @@ function renderList(){
         <div class="item-row__main">
           <label class="checkbox">
             <input type="checkbox" ${data.checked ? "checked" : ""}/>
-            <span class="qty">${qtyStr}</span>
-            <span class="label">${name}</span>
+            <span class="label">${name}</span><span class="qty">${qtyStr}</span>
           </label>
         </div>
         <div class="item-row__actions">
