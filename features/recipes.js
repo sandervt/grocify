@@ -8,21 +8,23 @@ let activeMeals      = new Set();
 let readyMeals       = new Set();
 
 /** DOM refs in the Recipes tab */
-let recipesListEl, newRecipeBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
+let recipesListEl, newRecipeBtn, resetReadyMealsBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
 
 export function initRecipesFeature(){
   // cache DOM
-  recipesListEl     = document.getElementById('recipesList');
-  newRecipeBtn      = document.getElementById('newRecipeBtn');
-  recipeDialog      = document.getElementById('recipeDialog');
-  recipeNameInput   = document.getElementById('recipeNameInput');
-  recipeItemsInput  = document.getElementById('recipeItemsInput');
-  recipeSaveBtn     = document.getElementById('recipeSaveBtn');
-  recipeCancelBtn   = document.getElementById('recipeCancelBtn');
-  recipeDeleteBtn   = document.getElementById('recipeDeleteBtn');
-  ingSuggestionsBox = document.getElementById('ingSuggestions');
+  recipesListEl      = document.getElementById('recipesList');
+  newRecipeBtn       = document.getElementById('newRecipeBtn');
+  resetReadyMealsBtn = document.getElementById('resetReadyMealsBtn');
+  recipeDialog       = document.getElementById('recipeDialog');
+  recipeNameInput    = document.getElementById('recipeNameInput');
+  recipeItemsInput   = document.getElementById('recipeItemsInput');
+  recipeSaveBtn      = document.getElementById('recipeSaveBtn');
+  recipeCancelBtn    = document.getElementById('recipeCancelBtn');
+  recipeDeleteBtn    = document.getElementById('recipeDeleteBtn');
+  ingSuggestionsBox  = document.getElementById('ingSuggestions');
 
   if (newRecipeBtn) newRecipeBtn.addEventListener('click', () => openRecipeDialog(null));
+  if (resetReadyMealsBtn) resetReadyMealsBtn.addEventListener('click', resetReadyState);
   if (recipeCancelBtn) recipeCancelBtn.addEventListener('click', () => recipeDialog.close());
 
   // Delete inside dialog
@@ -51,10 +53,13 @@ export function initRecipesFeature(){
   stateDoc.onSnapshot(
     doc => {
       const data = doc.data() || {};
-      const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
-      const readyArr = Array.isArray(data.readyMeals) ? data.readyMeals : [];
-      activeMeals = new Set(arr);
-      readyMeals = new Set(readyArr);
+      const arrActive = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+      const arrReady  = Array.isArray(data.readyMeals) ? data.readyMeals : [];
+      activeMeals = new Set(arrActive);
+      readyMeals  = new Set(arrReady);
+      if (resetReadyMealsBtn) {
+        resetReadyMealsBtn.style.display = readyMeals.size > 0 ? 'inline-flex' : 'none';
+      }
       renderRecipesPage(); // update badges
     },
     err => console.error("uiState onSnapshot error", err)
@@ -88,63 +93,64 @@ function renderRecipesPage(){
     const items = combinedMeals[name] || [];
     const isCustom = !!customRecipeDocs[name];
     const isActive = activeMeals.has(name);
-    recipesListEl.appendChild(renderCard(name, items, isCustom, isActive));
+    const isReady  = readyMeals.has(name);
+
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+
+    const header = document.createElement('header');
+    const title  = document.createElement('strong'); title.textContent = name;
+    const right  = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+
+    const badgeCount = document.createElement('span');
+    badgeCount.className = 'badge';
+    badgeCount.textContent = `${items.length} items`;
+
+    const badgeSel = document.createElement('span');
+    badgeSel.className = 'badge';
+    badgeSel.style.background = isActive ? '#dcfce7' : '#eef2ff';
+    badgeSel.textContent = isActive ? 'Geselecteerd' : 'Niet geselecteerd';
+
+    if (isReady) {
+      const badgeReady = document.createElement('span');
+      badgeReady.className = 'badge';
+      badgeReady.style.background = '#fef3c7';
+      badgeReady.textContent = 'Gereed';
+      right.append(badgeCount, badgeSel, badgeReady);
+    } else {
+      right.append(badgeCount, badgeSel);
+    }
+    header.append(title, right);
+
+    const tags = document.createElement('div');
+    tags.className = 'tags';
+    items.slice(0, 24).forEach(i => {
+      const t = document.createElement('span'); t.textContent = i; tags.appendChild(t);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    if(isCustom){
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn ghost'; editBtn.textContent = 'Bewerken';
+      editBtn.onclick = () => openRecipeDialog({ name, ...customRecipeDocs[name] });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn danger'; delBtn.textContent = 'Verwijderen';
+      delBtn.onclick = () => deleteRecipe(name);
+
+      actions.append(editBtn, delBtn);
+    } else {
+      const ro = document.createElement('small');
+      ro.style.color = '#64748b';
+      ro.textContent = 'Standaard recept';
+      actions.append(ro);
+    }
+
+    card.append(header, tags, actions);
+    recipesListEl.appendChild(card);
   });
-}
-
-function renderCard(name, items, isCustom, isActive){
-  const card = document.createElement('div');
-  card.className = 'recipe-card';
-  card.classList.add(readyMeals.has(name) ? 'ready' : 'out-of-scope');
-
-  const header = document.createElement('header');
-  const title  = document.createElement('strong');
-  title.textContent = name;
-  const right  = document.createElement('div');
-  right.style.display = 'flex';
-  right.style.gap = '8px';
-  right.style.alignItems = 'center';
-
-  const badgeCount = document.createElement('span');
-  badgeCount.className = 'badge';
-  badgeCount.textContent = `${items.length} items`;
-
-  const badgeSel = document.createElement('span');
-  badgeSel.className = 'badge';
-  badgeSel.style.background = isActive ? '#dcfce7' : '#eef2ff';
-  badgeSel.textContent = isActive ? 'Geselecteerd' : 'Niet geselecteerd';
-
-  const badgeStatus = document.createElement('span');
-  badgeStatus.className = 'badge status';
-  badgeStatus.textContent = readyMeals.has(name) ? 'Ready' : 'Out of scope';
-
-  right.append(badgeCount, badgeSel, badgeStatus);
-  header.append(title, right);
-
-  const actions = document.createElement('div');
-  actions.className = 'actions';
-
-  if(isCustom){
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn ghost';
-    editBtn.textContent = 'Bewerken';
-    editBtn.onclick = () => openRecipeDialog({ name, ...customRecipeDocs[name] });
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'btn danger';
-    delBtn.textContent = 'Verwijderen';
-    delBtn.onclick = () => deleteRecipe(name);
-
-    actions.append(editBtn, delBtn);
-  } else {
-    const ro = document.createElement('small');
-    ro.style.color = '#64748b';
-    ro.textContent = 'Standaard recept';
-    actions.append(ro);
-  }
-
-  card.append(header, actions);
-  return card;
 }
 
 /* ---------- Dialog ---------- */
@@ -213,6 +219,25 @@ async function onDialogDelete(){
   }
   await recipesCol.doc(editingRecipeId).delete();
   recipeDialog.close();
+}
+
+async function resetReadyState(){
+  const prev = Array.from(readyMeals);
+  try {
+    await stateDoc.set({ readyMeals: [] }, { merge: true });
+
+    if (window.GrocifyUndo && typeof window.GrocifyUndo.show === 'function') {
+      window.GrocifyUndo.show('Gereedstatus gewist', async () => {
+        try {
+          await stateDoc.set({ readyMeals: prev }, { merge: true });
+        } catch (e) {
+          console.error('undo readyMeals reset failed', e);
+        }
+      });
+    }
+  } catch(err){
+    console.error('reset readyMeals failed', err);
+  }
 }
 
 /* ---------- Shared helpers ---------- */
