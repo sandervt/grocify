@@ -8,6 +8,19 @@ let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 let showCompleted = false;
+// Persisted preference key for showing completed items
+const SHOW_COMPLETED_KEY = "grocify_showCompleted_v1";
+
+function loadShowCompleted(){
+  try {
+    const v = localStorage.getItem(SHOW_COMPLETED_KEY);
+    return v === "1"; // default false if not set
+  } catch { return false; }
+}
+
+function saveShowCompleted(val){
+  try { localStorage.setItem(SHOW_COMPLETED_KEY, val ? "1" : "0"); } catch {}
+}
 let lastComplete = false;
 
 /** Recents (STEP-3) */
@@ -60,6 +73,9 @@ window.renderList = renderList;
 
 /** Init */
 export function initListFeature(){
+  // Load local preference for showing completed items
+  showCompleted = loadShowCompleted();
+
   // list items live
   itemsCol.onSnapshot(
     snap => setActiveFromCloud(snap.docs.map(d => d.data())),
@@ -696,6 +712,7 @@ function wireToggleCompleted(){
   if(!btn) return;
   btn.addEventListener('click', () => {
     showCompleted = !showCompleted;
+    saveShowCompleted(showCompleted);
     renderList();
   });
   btn.textContent = showCompleted ? 'Afgevinkte items verbergen' : 'Afgevinkte items tonen';
