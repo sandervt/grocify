@@ -234,7 +234,7 @@ export function updateProgressRing(){
   const readyMeals = countReadyMeals();
   const showReady = readyMeals > 0 && !complete;
   if (readyEl){
-    readyEl.textContent = showReady ? `🍽️ ${readyMeals}` : '';
+    readyEl.textContent = showReady ? `${readyMeals} 🍽️` : '';
     readyEl.style.display = showReady ? 'block' : 'none';
   }
 
