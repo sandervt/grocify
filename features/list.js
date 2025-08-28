@@ -86,15 +86,16 @@ export function initListFeature(){
   stateDoc.onSnapshot(
     doc => {
       const data = doc.data() || {};
-      const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
-      activeMeals = new Set(arr);
-      reflectMealPillsFromState();
-      updateCounter();
-      window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
-      if (Array.isArray(data.readyMeals)) {
-        window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: data.readyMeals } }));
-      }
-    },
+        const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+        activeMeals = new Set(arr);
+        reflectMealPillsFromState();
+        updateCounter();
+        updateProgressRing();
+        window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
+        if (Array.isArray(data.readyMeals)) {
+          window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: data.readyMeals } }));
+        }
+      },
     err => console.error("onSnapshot state error", err)
   );
 
@@ -213,6 +214,16 @@ function updateCounter(){
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
 
+function countReadyMeals(){
+  const ready = new Set(activeMeals);
+  Object.values(activeItems).forEach(item => {
+    if (!item.checked){
+      item.sources.forEach(src => ready.delete(src));
+    }
+  });
+  return ready.size;
+}
+
 export function updateProgressRing(){
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
@@ -234,6 +245,15 @@ export function updateProgressRing(){
   const offset = circumference - progress * circumference;
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
+
+  const readyEl = svg.querySelector('.ring-ready');
+  const readyMeals = countReadyMeals();
+  const showReady = readyMeals > 0 && !complete;
+  if (readyEl){
+    readyEl.textContent = showReady ? `${readyMeals} 🍽️` : '';
+    readyEl.style.display = showReady ? 'block' : 'none';
+  }
+
   svg.classList.toggle('completed', complete);
   svg.classList.toggle('floating', onList && progress > 0);
 }
