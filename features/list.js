@@ -223,9 +223,36 @@ function updateCounter(){
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
 
+function setsEqual(a, b){
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function syncMealStates(){
+  const prevActive = new Set(activeMeals);
+  const prevReady = new Set(readyMeals);
+  const nextActive = new Set();
+  const nextReady = new Set();
+  const allMeals = new Set([...activeMeals, ...readyMeals]);
+  allMeals.forEach(meal => {
+    const items = Object.values(activeItems).filter(i => i.sources?.has(meal));
+    const isReady = items.length > 0 && items.every(i => i.checked);
+    (isReady ? nextReady : nextActive).add(meal);
+  });
+  if (!setsEqual(prevActive, nextActive) || !setsEqual(prevReady, nextReady)){
+    activeMeals = nextActive;
+    readyMeals = nextReady;
+    stateDoc.set({ activeMeals: [...activeMeals], readyMeals: [...readyMeals] }, { merge: true }).catch(e => console.error('state update failed', e));
+    window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
+    window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: [...readyMeals] } }));
+  }
+}
+
 export function updateProgressRing(){
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
+  syncMealStates();
   checkListCompletion(total, checked);
 
   const svg = document.getElementById('progressRing');

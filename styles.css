@@ -112,8 +112,7 @@ h1 {
 #progressRing .meal-segment{
   stroke:var(--border);
   stroke-width:2;
-  stroke-dasharray:0;
-  stroke-dashoffset:0;
+  fill:none;
 }
 #progressRing .meal-segment.filled{
   stroke:var(--accent);
