@@ -93,27 +93,33 @@ h1 {
   border-radius:50%;
   box-shadow:0 2px 6px rgba(0,0,0,0.15);
 }
-#progressRing circle{
-  fill:none;
-  stroke-width:4;
-  transform:rotate(-90deg);
-  transform-origin:50% 50%;
-}
-#progressRing .ring-bg{
-  stroke:var(--border);
-}
-#progressRing .ring-progress{
-  stroke:var(--primary);
-  stroke-linecap:round;
-  stroke-dasharray:100;
-  stroke-dashoffset:100;
-  transition:stroke-dashoffset .3s ease;
-}
-#progressRing .ring-check{
-  font-size:.9rem;
-  text-anchor:middle;
-  fill:var(--accent);
-  opacity:0;
+  #progressRing circle{
+    fill:none;
+    stroke-width:4;
+    transform:rotate(-90deg);
+    transform-origin:50% 50%;
+  }
+  #progressRing .ring-bg{
+    stroke:var(--border);
+  }
+  #progressRing .ring-progress{
+    stroke:var(--primary);
+    stroke-linecap:round;
+    stroke-dasharray:100;
+    stroke-dashoffset:100;
+    transition:stroke-dashoffset .3s ease;
+  }
+  #progressRing .ring-count{
+    font-size:.9rem;
+    text-anchor:middle;
+    fill:var(--accent);
+    display:none;
+  }
+  #progressRing .ring-check{
+    font-size:.9rem;
+    text-anchor:middle;
+    fill:var(--accent);
+    opacity:0;
   transition:opacity .3s ease;
 }
 #progressRing.completed .ring-progress{
