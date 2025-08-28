@@ -231,15 +231,15 @@ export function updateProgressRing(){
   const complete = total > 0 && checked === total;
 
   const countEl = svg.querySelector('.ring-count');
+  const iconEl = svg.querySelector('.ring-icon');
   const readyMeals = countReadyMeals();
+  const showReady = readyMeals > 0 && !complete;
   if (countEl){
-    if (readyMeals > 0 && !complete){
-      countEl.textContent = readyMeals;
-      countEl.style.display = 'block';
-    }else{
-      countEl.textContent = '';
-      countEl.style.display = 'none';
-    }
+    countEl.textContent = showReady ? readyMeals : '';
+    countEl.style.display = showReady ? 'block' : 'none';
+  }
+  if (iconEl){
+    iconEl.style.display = showReady ? 'block' : 'none';
   }
 
   svg.classList.toggle('completed', complete);
