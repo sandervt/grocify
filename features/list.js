@@ -301,6 +301,8 @@ function renderList(){
     document.querySelectorAll(".item-row .menu").forEach(m => m.setAttribute("hidden",""));
     document.querySelectorAll(".item-row .btn-overflow[aria-expanded='true']")
       .forEach(b => b.setAttribute("aria-expanded","false"));
+    document.querySelectorAll(".item-row.menu-open")
+      .forEach(r => r.classList.remove("menu-open"));
   };
   document.addEventListener("click", window.__grocifyCloseMenus);
 
@@ -386,6 +388,7 @@ function renderList(){
         if (willOpen) {
           menu.removeAttribute("hidden");
           ovBtn.setAttribute("aria-expanded","true");
+          row.classList.add("menu-open");
         }
       });
 
