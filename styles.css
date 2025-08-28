@@ -739,6 +739,7 @@ body.overflow-open .tabbar .overflow-panel{
 @keyframes star-fall {
   from { transform: translate(0,0); opacity: 1; }
   to { transform: translate(var(--dx, 0), 40px); opacity: 0; }
+}
 /* ========== Fireworks effect ========== */
 .confetti{
   pointer-events:none;
