@@ -348,13 +348,13 @@ function renderList(){
           </label>
         </div>
         <div class="item-row__actions">
-          <button class="btn-qty minus" aria-label="Verlaag aantal">−</button>
           <span class="qty">${qtyNum}</span>
-          <button class="btn-qty plus" aria-label="Verhoog aantal">＋</button>
 
           <div class="overflow">
             <button class="btn-overflow" aria-haspopup="menu" aria-expanded="false" aria-label="Meer acties">⋮</button>
             <div class="menu" role="menu" hidden>
+              <button class="menu__item inc" role="menuitem">Aantal verhogen</button>
+              <button class="menu__item dec" role="menuitem">Aantal verlagen</button>
               <button class="menu__item delete" role="menuitem">Verwijderen</button>
             </div>
           </div>
@@ -377,12 +377,6 @@ function renderList(){
         await cloudToggleCheck(name, cb.checked);
       });
 
-      // Qty controls
-      row.querySelector(".btn-qty.plus")
-        .addEventListener("click", () => adjustQty(name, +1));
-      row.querySelector(".btn-qty.minus")
-        .addEventListener("click", () => adjustQty(name, -1));
-
       // Overflow menu
       const ovBtn = row.querySelector(".btn-overflow");
       const menu  = row.querySelector(".menu");
@@ -396,6 +390,17 @@ function renderList(){
           ovBtn.setAttribute("aria-expanded","true");
         }
       });
+
+      row.querySelector(".menu__item.inc")
+        .addEventListener("click", () => {
+          adjustQty(name, +1);
+          window.__grocifyCloseMenus();
+        });
+      row.querySelector(".menu__item.dec")
+        .addEventListener("click", () => {
+          adjustQty(name, -1);
+          window.__grocifyCloseMenus();
+        });
 
       row.querySelector(".menu__item.delete")
         .addEventListener("click", () => deleteItemWithUndo(name));
