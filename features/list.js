@@ -4,6 +4,7 @@ import { SECTION_ORDER, MEAL_DATA, ITEM_TO_SECTION, inferSection, suggestMatches
 /** Local state */
 let activeMeals = new Set();            // from uiState.activeMeals
 let readyMeals = new Set();             // meals moved to ready state
+let lastMeals  = new Set();             // last selected meals for recipes tab
 let activeItems = {};                   // { name: { count, sources:Set, checked, unit? } }
 let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
@@ -98,8 +99,10 @@ export function initListFeature(){
       const data = doc.data() || {};
       const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
       const arrReady = Array.isArray(data.readyMeals) ? data.readyMeals : [];
+      const arrLast = Array.isArray(data.lastMeals) ? data.lastMeals : [];
       activeMeals = new Set(arr);
       readyMeals = new Set(arrReady);
+      lastMeals  = new Set(arrLast);
       reflectMealPillsFromState();
       updateCounter();
       window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
@@ -243,7 +246,7 @@ function syncMealStates(){
   if (!setsEqual(prevActive, nextActive) || !setsEqual(prevReady, nextReady)){
     activeMeals = nextActive;
     readyMeals = nextReady;
-    stateDoc.set({ activeMeals: [...activeMeals], readyMeals: [...readyMeals] }, { merge: true }).catch(e => console.error('state update failed', e));
+    stateDoc.set({ activeMeals: [...activeMeals], readyMeals: [...readyMeals], lastMeals: [...activeMeals] }, { merge: true }).catch(e => console.error('state update failed', e));
     window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
     window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: [...readyMeals] } }));
   }
@@ -744,13 +747,19 @@ function wireClearList(){
     if (snap.empty) return;
 
     const prevItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    let prevMeals = [];
+    let prevMeals = [], prevReady = [], prevLast = [];
     try {
         const st = await stateDoc.get();
-        prevMeals = (st.exists && Array.isArray(st.data().activeMeals)) ? st.data().activeMeals : [];
-    } catch(e){ prevMeals = []; }
+        const data = st.exists ? st.data() : {};
+        prevMeals = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+        prevReady = Array.isArray(data.readyMeals) ? data.readyMeals : [];
+        prevLast  = Array.isArray(data.lastMeals)  ? data.lastMeals  : [];
+    } catch(e){ prevMeals = []; prevReady = []; prevLast = []; }
 
     await cloudClearList();
+    try {
+        await stateDoc.set({ activeMeals: [], readyMeals: [], lastMeals: prevMeals }, { merge: true });
+    } catch(e){ console.warn("Clear meals failed", e); }
 
     // Reset local UI states
     document.querySelectorAll(".meal-row button").forEach(b => b.classList.remove("active"));
@@ -767,7 +776,9 @@ function wireClearList(){
             batch.set(ref, data, { merge: true });
         });
         await batch.commit();
-        try { await stateDoc.set({ activeMeals: prevMeals }, { merge: true }); }
+        try {
+          await stateDoc.set({ activeMeals: prevMeals, readyMeals: prevReady, lastMeals: prevLast }, { merge: true });
+        }
         catch(e) { console.warn("Restore meals failed", e); }
         });
     }
@@ -858,7 +869,7 @@ async function cloudToggleCheck(name, checked){
 }
 async function saveMealState(){
   try{
-    await stateDoc.set({ activeMeals: [...activeMeals] }, { merge: true });
+    await stateDoc.set({ activeMeals: [...activeMeals], lastMeals: [...activeMeals] }, { merge: true });
   }catch(e){ console.error("saveMealState failed", e); }
 }
 async function cloudClearList(){
