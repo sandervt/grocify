@@ -288,10 +288,11 @@ details.section[open] > summary{ background:#eaefff; }
 .section__items > li.item-row:hover{ background: #f8fafc; }
 
 .shopping-list small{ color: var(--muted); font-size: .75rem; }
-.shopping-list li.crossed {
-  opacity: 0.6;
-}
 .shopping-list li.crossed .label {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.shopping-list li.crossed .qty {
   text-decoration: line-through;
   color: var(--muted);
 }
@@ -394,7 +395,7 @@ dialog{
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   min-width: 160px;
-  z-index: 20;
+  z-index: 1200;
 }
 .overflow .menu[hidden] { display: none; }
 .menu__item {
@@ -653,6 +654,7 @@ body.modal-open { overflow: hidden; }
 /* ========== Item row controls ========== */
 .item-row {
   display: flex; align-items: center; justify-content: space-between; padding: 8px 4px;
+  position: relative;
 }
 .item-row__main { min-width: 0; }
 .item-row__actions { display: inline-flex; align-items: center; gap: 8px; }
@@ -670,11 +672,14 @@ body.modal-open { overflow: hidden; }
   font-size: 24px; line-height: 1;
   display:flex; align-items:center; justify-content:center;
 }
+
+.item-row.menu-open { z-index: 1250; }
 .btn-qty:hover, .btn-overflow:hover, .btn-icon:hover { background: #f8fafc; }
 .item-row .qty {
   min-width: 20px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  margin-left: 6px;
 }
 
 /* ========== Clear-list inline button ========== */
