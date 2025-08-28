@@ -279,22 +279,26 @@ export function updateProgressRing(){
   if (segGroup) {
     segGroup.innerHTML = '';
     if (segTotal > 0) {
-      const r = 13;
+      const segWidth = 3;
+      const r = 14 - segWidth / 2;
       const circ = 2 * Math.PI * r;
       const segLen = circ / segTotal;
+      const gap = segTotal > 1 ? 1 : 0;
+      const dash = segLen - gap;
       for (let i = 0; i < segTotal; i++) {
         const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         c.setAttribute('cx', '18');
         c.setAttribute('cy', '18');
         c.setAttribute('r', String(r));
         c.setAttribute('class', 'meal-segment' + (i < readyMeals.size ? ' filled' : ''));
-        c.setAttribute('stroke-dasharray', `${segLen} ${circ - segLen}`);
+        c.setAttribute('stroke-width', String(segWidth));
+        c.setAttribute('stroke-dasharray', `${dash} ${circ - dash}`);
         c.setAttribute('stroke-dashoffset', `${-segLen * i}`);
         segGroup.appendChild(c);
       }
     }
   }
-}
+  }
 
 function checkListCompletion(total, checked){
   const complete = total === 0 || (total > 0 && checked === total);

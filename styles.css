@@ -111,7 +111,8 @@ h1 {
 }
 #progressRing .meal-segment{
   stroke:var(--border);
-  stroke-width:2;
+  stroke-width:3;
+  stroke-linecap:butt;
   fill:none;
 }
 #progressRing .meal-segment.filled{
