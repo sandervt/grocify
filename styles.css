@@ -380,7 +380,7 @@ dialog{
 .tabbar .overflow.is-open .menu{ display:block; }
 
 /* Generic overflow menus (used elsewhere, not in tabbar) */
-.overflow { position: relative; z-index: 10; }
+.overflow { position: relative; }
 .overflow .menu {
   position: absolute;
   right: 0; top: 36px;
@@ -389,7 +389,7 @@ dialog{
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   min-width: 160px;
-  z-index: 200;
+  z-index: 1200;
 }
 .overflow .menu[hidden] { display: none; }
 .menu__item {
