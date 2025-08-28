@@ -230,16 +230,12 @@ export function updateProgressRing(){
   circle.style.strokeDashoffset = offset;
   const complete = total > 0 && checked === total;
 
-  const countEl = svg.querySelector('.ring-count');
-  const iconEl = svg.querySelector('.ring-icon');
+  const readyEl = svg.querySelector('.ring-ready');
   const readyMeals = countReadyMeals();
   const showReady = readyMeals > 0 && !complete;
-  if (countEl){
-    countEl.textContent = showReady ? readyMeals : '';
-    countEl.style.display = showReady ? 'block' : 'none';
-  }
-  if (iconEl){
-    iconEl.style.display = showReady ? 'block' : 'none';
+  if (readyEl){
+    readyEl.textContent = showReady ? `🍽️ ${readyMeals}` : '';
+    readyEl.style.display = showReady ? 'block' : 'none';
   }
 
   svg.classList.toggle('completed', complete);
