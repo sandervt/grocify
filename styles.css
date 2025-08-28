@@ -286,6 +286,10 @@ details.section[open] > summary{ background:#eaefff; }
   text-decoration: line-through;
   color: var(--muted);
 }
+.shopping-list li.crossed .qty {
+  text-decoration: line-through;
+  color: var(--muted);
+}
 
 /* ========== Custom input ========== */
 .custom-input{ display:flex; gap:8px; margin-top:20px; }
@@ -666,6 +670,7 @@ body.modal-open { overflow: hidden; }
   min-width: 20px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  margin-right: 6px;
 }
 
 /* ========== Clear-list inline button ========== */

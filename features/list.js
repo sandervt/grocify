@@ -337,19 +337,18 @@ function renderList(){
         row.classList.add("crossed");
       }
 
-      const qtyNum  = Number(data.count || 1);
-      const unitStr = data.unit ? ` <span class="unit">(${data.unit})</span>` : "";
+      const qtyNum = Number(data.count || 1);
+      const qtyStr = data.unit ? `${qtyNum}${data.unit}` : `${qtyNum}`;
 
       row.innerHTML = `
         <div class="item-row__main">
           <label class="checkbox">
             <input type="checkbox" ${data.checked ? "checked" : ""}/>
-            <span class="label">${name}${unitStr}</span>
+            <span class="qty">${qtyStr}</span>
+            <span class="label">${name}</span>
           </label>
         </div>
         <div class="item-row__actions">
-          <span class="qty">${qtyNum}</span>
-
           <div class="overflow">
             <button class="btn-overflow" aria-haspopup="menu" aria-expanded="false" aria-label="Meer acties">⋮</button>
             <div class="menu" role="menu" hidden>
