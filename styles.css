@@ -398,11 +398,23 @@ dialog{
   border:1px solid var(--border); border-radius:12px; background:#fff; padding:12px;
   display:grid; gap:8px;
 }
-.recipe-card header{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.recipe-card .tags{ display:flex; flex-wrap:wrap; gap:6px; }
-.recipe-card .tags span{
-  background:#eef2ff; border-radius:999px; padding:2px 8px; font-size:.75rem; color:#0f172a;
+.recipe-card.ready{
+  border-color:#86efac;
+  background:#f0fdf4;
 }
+.recipe-card.ready .badge.status{
+  background:#dcfce7;
+  color:#166534;
+}
+.recipe-card.out-of-scope{
+  border-color:var(--border);
+  background:#f8fafc;
+}
+.recipe-card.out-of-scope .badge.status{
+  background:#e2e8f0;
+  color:#475569;
+}
+.recipe-card header{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .recipe-card .actions{ display:flex; gap:8px; justify-content:flex-end; }
 .btn{ border:none; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:.9rem; }
 .btn.primary{ background:var(--primary); color:#fff; }
