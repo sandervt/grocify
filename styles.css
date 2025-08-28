@@ -279,7 +279,13 @@ details.section[open] > summary{ background:#eaefff; }
 .section__items > li.item-row:hover{ background: #f8fafc; }
 
 .shopping-list small{ color: var(--muted); font-size: .75rem; }
-.shopping-list li.crossed{ text-decoration: line-through; color: var(--muted); }
+.shopping-list li.crossed {
+  opacity: 0.6;
+}
+.shopping-list li.crossed .label {
+  text-decoration: line-through;
+  color: var(--muted);
+}
 
 /* ========== Custom input ========== */
 .custom-input{ display:flex; gap:8px; margin-top:20px; }

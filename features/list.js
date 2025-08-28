@@ -317,6 +317,9 @@ function renderList(){
       const data = activeItems[name];
       const row = document.createElement("li");
       row.className = "item-row";
+      if (data.checked) {
+        row.classList.add("crossed");
+      }
 
       const qtyNum  = Number(data.count || 1);
       const unitStr = data.unit ? ` <span class="unit">(${data.unit})</span>` : "";
