@@ -3,6 +3,7 @@ import { SECTION_ORDER, MEAL_DATA, ITEM_TO_SECTION, inferSection, suggestMatches
 
 /** Local state */
 let activeMeals = new Set();            // from uiState.activeMeals
+let readyMeals = new Set();             // meals moved to ready state
 let activeItems = {};                   // { name: { count, sources:Set, checked, unit? } }
 let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
@@ -22,6 +23,15 @@ function saveShowCompleted(val){
   try { localStorage.setItem(SHOW_COMPLETED_KEY, val ? "1" : "0"); } catch {}
 }
 let lastComplete = false;
+
+window.addEventListener('meals:active-changed', (e) => {
+  activeMeals = new Set((e.detail?.activeMeals) || []);
+  updateProgressRing();
+});
+window.addEventListener('meals:ready', (e) => {
+  readyMeals = new Set((e.detail?.readyMeals) || []);
+  updateProgressRing();
+});
 
 /** Recents (STEP-3) */
 const RECENTS_KEY = "grocify_recents_v1";
@@ -87,13 +97,13 @@ export function initListFeature(){
     doc => {
       const data = doc.data() || {};
       const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
+      const arrReady = Array.isArray(data.readyMeals) ? data.readyMeals : [];
       activeMeals = new Set(arr);
+      readyMeals = new Set(arrReady);
       reflectMealPillsFromState();
       updateCounter();
       window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
-      if (Array.isArray(data.readyMeals)) {
-        window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: data.readyMeals } }));
-      }
+      window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: [...readyMeals] } }));
     },
     err => console.error("onSnapshot state error", err)
   );
@@ -213,9 +223,36 @@ function updateCounter(){
   el.textContent = n === 1 ? "1 dag" : `${n} dagen`;
 }
 
+function setsEqual(a, b){
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+function syncMealStates(){
+  const prevActive = new Set(activeMeals);
+  const prevReady = new Set(readyMeals);
+  const nextActive = new Set();
+  const nextReady = new Set();
+  const allMeals = new Set([...activeMeals, ...readyMeals]);
+  allMeals.forEach(meal => {
+    const items = Object.values(activeItems).filter(i => i.sources?.has(meal));
+    const isReady = items.length > 0 && items.every(i => i.checked);
+    (isReady ? nextReady : nextActive).add(meal);
+  });
+  if (!setsEqual(prevActive, nextActive) || !setsEqual(prevReady, nextReady)){
+    activeMeals = nextActive;
+    readyMeals = nextReady;
+    stateDoc.set({ activeMeals: [...activeMeals], readyMeals: [...readyMeals] }, { merge: true }).catch(e => console.error('state update failed', e));
+    window.dispatchEvent(new CustomEvent('meals:active-changed', { detail: { activeMeals: [...activeMeals] } }));
+    window.dispatchEvent(new CustomEvent('meals:ready', { detail: { readyMeals: [...readyMeals] } }));
+  }
+}
+
 export function updateProgressRing(){
   const total = Object.keys(activeItems).length;
   const checked = Object.values(activeItems).filter(i => i.checked).length;
+  syncMealStates();
   checkListCompletion(total, checked);
 
   const svg = document.getElementById('progressRing');
@@ -236,7 +273,32 @@ export function updateProgressRing(){
   const complete = total > 0 && checked === total;
   svg.classList.toggle('completed', complete);
   svg.classList.toggle('floating', onList && progress > 0);
-}
+
+  const segTotal = activeMeals.size + readyMeals.size;
+  const segGroup = svg.querySelector('#mealSegments');
+  if (segGroup) {
+    segGroup.innerHTML = '';
+    if (segTotal > 0) {
+      const segWidth = 3;
+      const r = 14 - segWidth / 2;
+      const circ = 2 * Math.PI * r;
+      const segLen = circ / segTotal;
+      const gap = segTotal > 1 ? 1 : 0;
+      const dash = segLen - gap;
+      for (let i = 0; i < segTotal; i++) {
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', '18');
+        c.setAttribute('cy', '18');
+        c.setAttribute('r', String(r));
+        c.setAttribute('class', 'meal-segment' + (i < readyMeals.size ? ' filled' : ''));
+        c.setAttribute('stroke-width', String(segWidth));
+        c.setAttribute('stroke-dasharray', `${dash} ${circ - dash}`);
+        c.setAttribute('stroke-dashoffset', `${-segLen * i}`);
+        segGroup.appendChild(c);
+      }
+    }
+  }
+  }
 
 function checkListCompletion(total, checked){
   const complete = total === 0 || (total > 0 && checked === total);
