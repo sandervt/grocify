@@ -99,23 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Tabs Router ===== */
   function initRouter(){
-    const TABS = ["list","recipes","stores"];
+    const TABS = ["list","stores"];
     const DEFAULT_TAB = "list";
     const STORAGE_KEY = "ui-active-tab";
 
     const pages = {
-      list:    document.getElementById("tab-list"),
-      recipes: document.getElementById("tab-recipes"),
-      stores:  document.getElementById("tab-stores"),
+      list:   document.getElementById("tab-list"),
+      stores: document.getElementById("tab-stores"),
     };
     const buttons = {
-      list:    document.querySelectorAll('#tabbtn-list'),
-      recipes: document.querySelectorAll('#tabbtn-recipes'),
-      stores:  document.querySelectorAll('#tabbtn-stores'),
+      list:   document.querySelectorAll('#tabbtn-list'),
+      stores: document.querySelectorAll('#tabbtn-stores'),
     };
 
     function setActive(name){
       Object.entries(pages).forEach(([k,el]) => el?.classList.toggle("active", k===name));
+      document.getElementById('recipes-manager')?.classList.remove('open');
 
       // there are two sets of tab buttons (top + bottom), select all
       Object.entries(buttons).forEach(([k,nodeList]) => nodeList.forEach(btn => {
@@ -219,6 +218,20 @@ document.addEventListener('DOMContentLoaded', () => {
     closeOverflow();
     const mod = await import('./features/items.js');
     mod.openItemsManagerDialog?.();
+  });
+
+  /* Recipes manager action */
+  let recipesInit = false;
+  document.getElementById('miRecipes')?.addEventListener('click', async () => {
+    closeOverflow();
+    document.getElementById('tab-list')?.classList.remove('active');
+    document.getElementById('tab-stores')?.classList.remove('active');
+    document.getElementById('recipes-manager')?.classList.add('open');
+    if (!recipesInit) {
+      const mod = await import('./features/recipes.js');
+      mod.initRecipesFeature?.();
+      recipesInit = true;
+    }
   });
 
   // Open Winkels from overflow (no tab button needed)
