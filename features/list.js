@@ -199,8 +199,45 @@ function renderMeals(){
       btn.addEventListener("click", async () => {
         const turnOn = !btn.classList.contains("active");
         btn.classList.toggle("active", turnOn);
-        if (turnOn) { await cloudAddRecipe(name);  activeMeals.add(name); }
-        else        { await cloudRemoveRecipe(name); activeMeals.delete(name); }
+
+        if (turnOn) {
+          await cloudAddRecipe(name);
+          activeMeals.add(name);
+        } else {
+          // remove items locally for snappier UI
+          const prevItems = {};
+          Object.entries(activeItems).forEach(([k,v]) => {
+            prevItems[k] = { ...v, sources: new Set(v.sources) };
+          });
+          const items = combinedMeals[name] || [];
+          items.forEach(n => {
+            const data = activeItems[n];
+            if (!data) return;
+            data.sources?.delete(name);
+            data.count = Math.max(0, (data.count || 1) - 1);
+            if (data.count <= 0 || (data.sources && data.sources.size === 0)) {
+              delete activeItems[n];
+            }
+          });
+          renderList();
+          updateProgressRing();
+          setClearCtaVisible(Object.keys(activeItems).length > 0);
+
+          try {
+            await cloudRemoveRecipe(name);
+            activeMeals.delete(name);
+          } catch(e) {
+            console.error('cloudRemoveRecipe failed', e);
+            // revert local state and UI
+            activeItems = prevItems;
+            renderList();
+            updateProgressRing();
+            btn.classList.add('active');
+            alert('Kon maaltijd niet verwijderen');
+            return;
+          }
+        }
+
         await saveMealState();
         updateCounter(); // no-op if #mealCounter isn't present; safe
       });
@@ -841,12 +878,19 @@ async function cloudRemoveSource(name, source){
 }
 async function cloudRemoveRecipe(recipeName){
   const items = combinedMeals[recipeName] || [];
-  const batch = firebase.firestore().batch();
-  items.forEach(n => {
+  await Promise.all(items.map(async n => {
     const ref = itemsCol.doc(slug(n));
-    batch.set(ref, { origins: arrDel(recipeName) }, { merge: true });
-  });
-  await batch.commit();
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const data = snap.data() || {};
+    const nextCount = (data.count || 0) - 1;
+    const nextOrigins = (data.origins || []).filter(x => x !== recipeName);
+    if (nextCount <= 0 || nextOrigins.length === 0) {
+      await ref.delete();
+    } else {
+      await ref.set({ count: nextCount, origins: nextOrigins }, { merge: true });
+    }
+  }));
 }
 async function cloudAddRecipe(recipeName){
   const items = combinedMeals[recipeName] || [];
