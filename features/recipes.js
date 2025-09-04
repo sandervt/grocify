@@ -6,6 +6,7 @@ let customRecipeDocs = {};    // name -> { id, items }
 let combinedMeals    = {};    // name -> items[]
 let activeMeals      = new Set();
 let readyMeals       = new Set();
+let lastMeals        = new Set();      // last selected meals from list tab
 
 /** DOM refs in the Recipes tab */
 let recipesListEl, newRecipeBtn, resetReadyMealsBtn, recipeDialog, recipeNameInput, recipeItemsInput, recipeSaveBtn, recipeCancelBtn, recipeDeleteBtn, ingSuggestionsBox;
@@ -55,15 +56,13 @@ export function initRecipesFeature(){
       const data = doc.data() || {};
       const arrActive = Array.isArray(data.activeMeals) ? data.activeMeals : [];
       const arrReady  = Array.isArray(data.readyMeals) ? data.readyMeals : [];
+      const arrLast   = Array.isArray(data.lastMeals)  ? data.lastMeals  : [];
       activeMeals = new Set(arrActive);
       readyMeals  = new Set(arrReady);
+      lastMeals   = new Set(arrLast);
       if (resetReadyMealsBtn) {
         resetReadyMealsBtn.style.display = readyMeals.size > 0 ? 'inline-flex' : 'none';
       }
-      const arr = Array.isArray(data.activeMeals) ? data.activeMeals : [];
-      const readyArr = Array.isArray(data.readyMeals) ? data.readyMeals : [];
-      activeMeals = new Set(arr);
-      readyMeals = new Set(readyArr);
       renderRecipesPage(); // update badges
     },
     err => console.error("uiState onSnapshot error", err)
@@ -96,7 +95,7 @@ function renderRecipesPage(){
   names.forEach(name => {
     const items = combinedMeals[name] || [];
     const isCustom = !!customRecipeDocs[name];
-    const isActive = activeMeals.has(name);
+    const isActive = activeMeals.has(name) || lastMeals.has(name);
     const isReady  = readyMeals.has(name);
 
     const card = document.createElement('div');
