@@ -1,5 +1,6 @@
 import { initFirebase } from "./firebase.js";
 import { initListFeature, updateProgressRing } from "./features/list.js";
+import { initRecipesOverview } from "./features/recipes.overview.js";
 import { initStoresFeature } from "./features/stores.js";
 
 /* ===== Composer (bottom sheet) ===== */
@@ -242,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Features
   initListFeature();
+  initRecipesOverview();
   initStoresFeature({
     onActiveStoreChanged(){
       if (typeof window.renderList === "function") window.renderList();
