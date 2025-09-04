@@ -10,6 +10,8 @@ let customRecipeDocs = {};              // name -> { id, items: string[] }
 let combinedMeals = {};                 // name -> items[] (strings)
 let KNOWN_ITEMS = [];
 let showCompleted = false;
+let suppressItemsSnapshot = false;      // ignore list snapshot when locally mutating
+let pendingItemsSnapshot = null;        // latest items snapshot while suppressed
 // Persisted preference key for showing completed items
 const SHOW_COMPLETED_KEY = "grocify_showCompleted_v1";
 
@@ -89,7 +91,14 @@ export function initListFeature(){
 
   // list items live
   itemsCol.onSnapshot(
-    snap => setActiveFromCloud(snap.docs.map(d => d.data())),
+    snap => {
+      const docs = snap.docs.map(d => d.data());
+      if (suppressItemsSnapshot) {
+        pendingItemsSnapshot = docs;
+      } else {
+        setActiveFromCloud(docs);
+      }
+    },
     err  => console.error("onSnapshot items error", err)
   );
 
@@ -204,6 +213,8 @@ function renderMeals(){
           await cloudAddRecipe(name);
           activeMeals.add(name);
         } else {
+          suppressItemsSnapshot = true;
+          pendingItemsSnapshot = null;
           // remove items locally for snappier UI
           const prevItems = {};
           Object.entries(activeItems).forEach(([k,v]) => {
@@ -235,6 +246,12 @@ function renderMeals(){
             btn.classList.add('active');
             alert('Kon maaltijd niet verwijderen');
             return;
+          } finally {
+            suppressItemsSnapshot = false;
+            if (pendingItemsSnapshot) {
+              setActiveFromCloud(pendingItemsSnapshot);
+              pendingItemsSnapshot = null;
+            }
           }
         }
 
