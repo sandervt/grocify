@@ -168,17 +168,6 @@ h1 {
   padding: 16px;
 }
 
-.meal-pill {
-  background: #e2e8f0;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-weight: 600;
-}
-
-.meal-pill.pending {
-  opacity: 0.5;
-}
-
 /* ========== Collapsible sections (Maaltijden / Weekboodschappen) ========== */
 details.section{
   border-radius:16px; border:1px solid var(--border); background:#fff;
@@ -218,16 +207,15 @@ details.section[open] > summary{ background:#eaefff; }
   box-shadow:0 4px 14px rgba(124,58,237,.25);
 }
 
-/* Reusable meal pill buttons */
+/* Meal pill styling */
 .meal-pill{
   background:var(--primary);
   color:#fff;
   border:none;
-  border-radius:16px;
+  border-radius:999px;
   padding:12px 16px;
   font-weight:600;
   box-shadow:0 2px 8px rgba(0,0,0,.08);
-  min-width:128px;
   text-align:center;
   transition:transform .06s ease, background .2s ease, box-shadow .2s ease;
   scroll-snap-align:start;
