@@ -33,6 +33,8 @@ export function initRecipesOverview(){
     readyMeals = new Set(e.detail?.readyMeals || []);
     render();
   });
+
+  render();
 }
 
 export function refreshRecipesOverview() {
