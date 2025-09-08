@@ -5,7 +5,6 @@ let readyMeals = new Set();
 export function initRecipesOverview(){
   mealStatusEl = document.getElementById('mealStatus');
   if (!mealStatusEl) return;
-
   window.addEventListener('meals:active-changed', e => {
     activeMeals = new Set(e.detail?.activeMeals || []);
     render();
@@ -29,7 +28,7 @@ function render() {
 
   const allMeals = Array.from(new Set([...activeMeals, ...readyMeals])).sort((a, b) => a.localeCompare(b));
 
-  allMeals.forEach((meal) => {
+  allMeals.forEach(meal => {
     const pill = document.createElement('span');
     pill.className = 'meal-pill';
     if (readyMeals.has(meal)) {
