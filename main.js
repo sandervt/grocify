@@ -99,17 +99,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Tabs Router ===== */
   function initRouter(){
-    const TABS = ["list","stores"];
+    const TABS = ["list","recipes","stores"];
     const DEFAULT_TAB = "list";
     const STORAGE_KEY = "ui-active-tab";
 
     const pages = {
-      list:   document.getElementById("tab-list"),
-      stores: document.getElementById("tab-stores"),
+      list:    document.getElementById("tab-list"),
+      recipes: document.getElementById("tab-recipes"),
+      stores:  document.getElementById("tab-stores"),
     };
     const buttons = {
-      list:   document.querySelectorAll('#tabbtn-list'),
-      stores: document.querySelectorAll('#tabbtn-stores'),
+      list:    document.querySelectorAll('#tabbtn-list'),
+      recipes: document.querySelectorAll('#tabbtn-recipes'),
+      stores:  document.querySelectorAll('#tabbtn-stores'),
     };
 
     function setActive(name){

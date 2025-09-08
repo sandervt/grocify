@@ -384,7 +384,7 @@ dialog{
   display:flex; align-items:center; gap:0; padding:0 8px;
   z-index:1000;
 }
-#tabbtn-list,#tabbtn-stores{
+#tabbtn-list,#tabbtn-recipes,#tabbtn-stores{
   flex:1 1 0; min-width:0;
   appearance:none; border:0; background:transparent;
   padding:10px 6px; font-size:.9rem; color:#475569;
