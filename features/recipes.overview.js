@@ -4,19 +4,37 @@ let mealStatusEl;
 let activeMeals = new Set();
 let readyMeals = new Set();
 
-export function initRecipesOverview() {
-  mealStatusEl = document.getElementById('mealStatus');
-  if (!mealStatusEl) return;
+// Below is legacy
+// export function initRecipesOverview() {
+//   mealStatusEl = document.getElementById('mealStatus');
+//   if (!mealStatusEl) return;
 
-  stateDoc.onSnapshot(
-    (doc) => {
-      const data = doc.data() || {};
-      activeMeals = new Set(Array.isArray(data.activeMeals) ? data.activeMeals : []);
-      readyMeals = new Set(Array.isArray(data.readyMeals) ? data.readyMeals : []);
-      render();
-    },
-    (err) => console.error('stateDoc onSnapshot error', err)
-  );
+//   stateDoc.onSnapshot(
+//     (doc) => {
+//       const data = doc.data() || {};
+//       activeMeals = new Set(Array.isArray(data.activeMeals) ? data.activeMeals : []);
+//       readyMeals = new Set(Array.isArray(data.readyMeals) ? data.readyMeals : []);
+//       render();
+//     },
+//     (err) => console.error('stateDoc onSnapshot error', err)
+//   );
+// }
+
+export function initRecipesOverview(){
+  updatePills();
+  window.addEventListener('meals:ready', e => {
+    readyMeals = new Set(e.detail?.readyMeals || []);
+    updatePills();
+  });
+}
+
+function updatePills(){
+  document.querySelectorAll('.meal-pill').forEach(pill => {
+    const name = pill.dataset.meal || pill.textContent.trim();
+    const isReady = readyMeals.has(name);
+    pill.classList.toggle('ready', isReady);
+    pill.classList.toggle('pending', !isReady);
+  });
 }
 
 export function refreshRecipesOverview() {
