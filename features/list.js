@@ -841,12 +841,12 @@ async function cloudRemoveSource(name, source){
 }
 async function cloudRemoveRecipe(recipeName){
   const items = combinedMeals[recipeName] || [];
-  const batch = firebase.firestore().batch();
-  items.forEach(n => {
-    const ref = itemsCol.doc(slug(n));
-    batch.set(ref, { origins: arrDel(recipeName) }, { merge: true });
-  });
-  await batch.commit();
+  // For each ingredient in the recipe, undo the previous add
+  // This removes the recipe as a source and decrements the count.
+  // If the item has no remaining origins, it is deleted from the list.
+  for (const n of items) {
+    await undoAddItem(n, 1, recipeName);
+  }
 }
 async function cloudAddRecipe(recipeName){
   const items = combinedMeals[recipeName] || [];

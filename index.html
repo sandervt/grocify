@@ -75,9 +75,14 @@
 
             <button id="clearListBtn" class="clear-list">🗑️ Lijst leegmaken</button>
         </section>
-
-        <!-- TAB: RECIPES (placeholder for M3) -->
+      
+        <!-- TAB: RECIPES OVERVIEW -->
         <section id="tab-recipes" class="tabpage">
+            <div id="mealStatus"></div>
+        </section>
+
+        <!-- Recipe manager (legacy UI) -->
+        <section id="recipes-manager" class="tabpage">
             <div class="recipes-toolbar">
                 <h2 style="margin: 0;">🍳 Recepten</h2>
                 <div class="recipes-toolbar-actions">
@@ -136,6 +141,7 @@
             <div id="overflowPanel" class="overflow-panel" role="menu" aria-label="Meer acties">
               <ul class="overflow-list">
                 <li role="menuitem"><button id="miManageIngredients">🥕 Ingrediënten beheren</button></li>
+                <li role="menuitem"><button id="miRecipes">🍳 Recepten beheren</button></li>
                 <li role="menuitem"><button id="miStores">🏬 Winkels</button></li>
                 <!-- future options go here -->
                 <!-- <li role="menuitem"><button>⚙️ Instellingen</button></li> -->

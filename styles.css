@@ -160,6 +160,25 @@ h1 {
 }
 .section__badge { margin-left: auto; }
 
+/* Meals overview */
+#mealStatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+}
+
+.meal-pill {
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+
+.meal-pill.pending {
+  opacity: 0.5;
+}
+
 /* ========== Collapsible sections (Maaltijden / Weekboodschappen) ========== */
 details.section{
   border-radius:16px; border:1px solid var(--border); background:#fff;
@@ -381,6 +400,9 @@ dialog{
 /* ========== Tabs / pages ========== */
 .tabpage{ display:none; }
 .tabpage.active{ display:block; }
+
+#recipes-manager{ display:none; }
+#recipes-manager.open{ display:block; }
 
 /* Bottom tab bar */
 .tabbar{

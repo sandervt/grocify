@@ -1,6 +1,6 @@
 import { initFirebase } from "./firebase.js";
 import { initListFeature, updateProgressRing } from "./features/list.js";
-import { initRecipesFeature } from "./features/recipes.js";
+import { initRecipesOverview } from "./features/recipes.overview.js";
 import { initStoresFeature } from "./features/stores.js";
 
 /* ===== Composer (bottom sheet) ===== */
@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setActive(name){
       Object.entries(pages).forEach(([k,el]) => el?.classList.toggle("active", k===name));
+      document.getElementById('recipes-manager')?.classList.remove('open');
 
       // there are two sets of tab buttons (top + bottom), select all
       Object.entries(buttons).forEach(([k,nodeList]) => nodeList.forEach(btn => {
@@ -221,6 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
     mod.openItemsManagerDialog?.();
   });
 
+  /* Recipes manager action */
+  let recipesInit = false;
+  document.getElementById('miRecipes')?.addEventListener('click', async () => {
+    closeOverflow();
+    document.getElementById('tab-list')?.classList.remove('active');
+    document.getElementById('tab-stores')?.classList.remove('active');
+    document.getElementById('recipes-manager')?.classList.add('open');
+    if (!recipesInit) {
+      const mod = await import('./features/recipes.js');
+      mod.initRecipesFeature?.();
+      recipesInit = true;
+    }
+  });
+
   // Open Winkels from overflow (no tab button needed)
   document.getElementById('miStores')?.addEventListener('click', () => {
     closeOverflow();
@@ -230,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Features
   initListFeature();
-  initRecipesFeature();
+  initRecipesOverview();
   initStoresFeature({
     onActiveStoreChanged(){
       if (typeof window.renderList === "function") window.renderList();
